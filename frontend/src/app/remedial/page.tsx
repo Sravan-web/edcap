@@ -85,18 +85,18 @@ export default function RemedialPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
-                            📐 Topic {item.topic_id.slice(0, 8)}
+                            📐 {item.topic_name || `Topic Review`}{item.course_code ? ` · ${item.course_code}` : ''}
                           </div>
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <span className="badge badge-orange">
-                              Repetition #{item.repetition_count + 1}
+                              Review Step #{item.repetition_count + 1}
                             </span>
                             <span className="badge badge-gray">
-                              Interval: {item.interval_days}d
+                              Every {item.interval_days} day{item.interval_days !== 1 ? 's' : ''}
                             </span>
                             {item.last_result && (
                               <span className={`badge ${item.last_result === 'pass' ? 'badge-green' : 'badge-red'}`}>
-                                Last: {item.last_result}
+                                Last review: {item.last_result === 'pass' ? 'Passed' : 'Needs practice'}
                               </span>
                             )}
                           </div>
@@ -138,14 +138,14 @@ export default function RemedialPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
-                              📐 Topic {item.topic_id.slice(0, 8)}
+                              📐 {item.topic_name || `Topic Review`}{item.course_code ? ` · ${item.course_code}` : ''}
                             </div>
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                               <span className="badge badge-gray">
                                 Due in {daysUntil} day{daysUntil !== 1 ? 's' : ''}
                               </span>
                               <span className="badge badge-gray">
-                                Interval: {item.interval_days}d
+                                Every {item.interval_days} day{item.interval_days !== 1 ? 's' : ''}
                               </span>
                             </div>
                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>

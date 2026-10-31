@@ -55,6 +55,40 @@ export default function AdminPage() {
   const outcomeColor = (outcome: string) =>
     outcome === 'success' ? 'badge-green' : 'badge-red';
 
+  const SETTING_INFO: Record<string, { label: string; desc: string }> = {
+    'rule.below_avg_pct': {
+      label: 'Below Class Average Alert Threshold (%)',
+      desc: 'Flag students when their score falls this many percentage points below the class average',
+    },
+    'rule.trend_slope': {
+      label: 'Score Drop Alert Rate (% per test)',
+      desc: 'Flag students when their scores drop steadily across consecutive assessments',
+    },
+    'rule.topic_accuracy_pct': {
+      label: 'Minimum Topic Mastery (%)',
+      desc: 'Schedule remedial practice when accuracy on a syllabus topic falls below this score',
+    },
+    'quiz.questions_per_day': {
+      label: 'Daily Practice Quiz Length (Questions)',
+      desc: 'Number of questions included in each daily student micro-quiz',
+    },
+    'notification.email_enabled': {
+      label: 'Email Alerts Enabled',
+      desc: 'Send email summaries and security notifications to teachers and students',
+    },
+  };
+
+  const ACTION_LABELS: Record<string, string> = {
+    'auth.login': 'User Sign-In',
+    'auth.logout': 'User Sign-Out',
+    'flag.update': 'Support Flag Updated',
+    'admin.user_status_change': 'User Account Status Changed',
+    'admin.role_change': 'User Role Changed',
+    'admin.enroll_student': 'Student Enrolled in Course',
+    'admin.assign_faculty': 'Faculty Assigned to Course',
+    'system.seed_data': 'Demo Data Initialized',
+  };
+
   return (
     <AppShell>
       <Topbar breadcrumb="Admin" current="Admin Console" />
@@ -182,7 +216,9 @@ export default function AdminPage() {
                             <td style={{ fontSize: 12, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                               {new Date(log.timestamp).toLocaleString()}
                             </td>
-                            <td className="td-primary font-mono text-sm">{log.action}</td>
+                            <td className="td-primary text-sm">
+                              {ACTION_LABELS[log.action] ?? log.action.replace(/[._]/g, ' ')}
+                            </td>
                             <td className="text-sm truncate" style={{ maxWidth: 140 }}>{log.target}</td>
                             <td className="font-mono text-sm">{log.ip_prefix}</td>
                             <td>
@@ -224,7 +260,16 @@ export default function AdminPage() {
                             border: '1px solid var(--border)',
                           }}
                         >
-                          <span className="font-mono text-sm" style={{ flex: 1, color: 'var(--text-secondary)' }}>{s.key}</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {SETTING_INFO[s.key]?.label ?? s.key.replace(/[._]/g, ' ')}
+                            </div>
+                            {SETTING_INFO[s.key]?.desc && (
+                              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                {SETTING_INFO[s.key].desc}
+                              </div>
+                            )}
+                          </div>
 
                           {editingKey === s.key ? (
                             <>

@@ -306,7 +306,9 @@ export interface Playbook {
 export interface RemedialItem {
   id: string;
   topic_id: string;
+  topic_name?: string;
   course_id: string;
+  course_code?: string;
   next_review_at: string;
   interval_days: number;
   repetition_count: number;

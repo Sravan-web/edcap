@@ -31,17 +31,47 @@ class FlagUpdateRequest(BaseModel):
     override_note: str | None = Field(None, max_length=1000)
 
 
+import re
+
+FEATURE_FRIENDLY_LABELS: dict[str, str] = {
+    "trend_slope": "Weekly Score Trend",
+    "below_avg_fires": "Tests Below Class Average",
+    "velocity_decay_score": "Learning Pace Slowdown",
+    "hesitation_index": "Question Hesitation Level",
+    "persistence_decay_rate": "Drop in Practice Completion",
+    "format_preference_delta": "Need for Visual / Step-by-Step Material",
+    "prereq_accuracy": "Foundation / Prerequisite Mastery",
+    "streak_consistency": "Daily Study Consistency",
+    "reading_speed": "Reading & Comprehension Pace",
+    "topic_accuracy": "Topic Mastery Score",
+    "weak_topic": "Struggling Topic",
+}
+
+
+def _humanize_reason(reason: str) -> str:
+    """Convert technical rule/ML strings into plain, everyday language."""
+    m_neg = re.search(r"trend slope is negative \(([-\d.]+)\)", reason, re.IGNORECASE)
+    if m_neg:
+        val = abs(float(m_neg.group(1)))
+        return f"Test scores have been dropping steadily (down about {val:.1f}% per test)"
+    m_slope = re.search(r"Score trend slope is ([-\d.]+)", reason, re.IGNORECASE)
+    if m_slope:
+        val = abs(float(m_slope.group(1)))
+        return f"Test scores are trending downward (dropping ~{val:.1f}% per test)"
+    return reason
+
+
 def _parse_reasons(raw: str | list | None) -> list[str]:
     if isinstance(raw, list):
-        return [str(x) for x in raw]
+        return [_humanize_reason(str(x)) for x in raw]
     if isinstance(raw, str):
         try:
             parsed = json.loads(raw)
             if isinstance(parsed, list):
-                return [str(x) for x in parsed]
+                return [_humanize_reason(str(x)) for x in parsed]
         except Exception:
             if raw.strip():
-                return [raw.strip()]
+                return [_humanize_reason(raw.strip())]
     return []
 
 
@@ -55,8 +85,9 @@ def _parse_top_features(raw: str | dict | list | None) -> dict[str, float]:
     if isinstance(parsed, dict):
         out: dict[str, float] = {}
         for k, v in parsed.items():
+            label = FEATURE_FRIENDLY_LABELS.get(str(k), str(k).replace("_", " ").title())
             try:
-                out[str(k)] = float(v)
+                out[label] = float(v)
             except (TypeError, ValueError):
                 pass
         return out
@@ -64,8 +95,10 @@ def _parse_top_features(raw: str | dict | list | None) -> dict[str, float]:
         out = {}
         for item in parsed:
             if isinstance(item, dict) and "feature" in item:
+                raw_key = str(item["feature"])
+                label = FEATURE_FRIENDLY_LABELS.get(raw_key, raw_key.replace("_", " ").title())
                 try:
-                    out[str(item["feature"])] = float(item.get("value", item.get("shap_value", 0.0)))
+                    out[label] = float(item.get("value", item.get("shap_value", 0.0)))
                 except (TypeError, ValueError):
                     pass
         return out

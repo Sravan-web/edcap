@@ -171,7 +171,7 @@ def _rule_negative_trend(pct_scores: list[float]) -> RuleResult:
             fired=True,
             track="A_foundational",
             risk_score=risk,
-            reasons=[f"Score trend slope is {slope:.2f} (threshold {slope_threshold})"],
+            reasons=[f"Test scores are trending downward (dropping ~{abs(slope):.1f}% per test)"],
             top_features=[{"feature": "trend_slope", "value": round(slope, 3)}],
         )
     return RuleResult(fired=False, track="normal", risk_score=0.0)

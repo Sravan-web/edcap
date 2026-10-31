@@ -36,6 +36,40 @@ function riskColor(score: number) {
   return 'hsl(145,65%,55%)';
 }
 
+const FEATURE_LABELS: Record<string, string> = {
+  trend_slope: 'Weekly Score Trend',
+  below_avg_fires: 'Tests Below Class Average',
+  velocity_decay_score: 'Learning Pace Slowdown',
+  hesitation_index: 'Question Hesitation Level',
+  persistence_decay_rate: 'Drop in Practice Completion',
+  format_preference_delta: 'Need for Visual / Step-by-Step Material',
+  prereq_accuracy: 'Foundation / Prerequisite Mastery',
+  streak_consistency: 'Daily Study Consistency',
+  reading_speed: 'Reading & Comprehension Pace',
+  topic_accuracy: 'Topic Mastery Score',
+  weak_topic: 'Struggling Topic',
+};
+
+function friendlyFeatureName(key: string): string {
+  return FEATURE_LABELS[key] ?? key.replace(/_/g, ' ');
+}
+
+function friendlyFeatureValue(label: string, val: number): string {
+  const lower = label.toLowerCase();
+  if (lower.includes('trend') || lower.includes('slope')) {
+    return val < 0
+      ? `Dropping ~${Math.abs(val).toFixed(1)}% per test`
+      : `Improving +${val.toFixed(1)}% per test`;
+  }
+  if (lower.includes('below') && lower.includes('average')) {
+    return `${Math.round(Math.abs(val))} recent tests`;
+  }
+  if (Math.abs(val) <= 1) {
+    return `${Math.round(Math.abs(val) * 100)}% impact`;
+  }
+  return `${val.toFixed(1)}`;
+}
+
 export default function FlagsPage() {
   const [flags, setFlags] = useState<SupportFlag[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -231,29 +265,33 @@ export default function FlagsPage() {
                   </div>
                 )}
 
-                {/* SHAP features */}
+                {/* Key Indicators */}
                 {flag.top_features && typeof flag.top_features === 'object' && !Array.isArray(flag.top_features) && Object.keys(flag.top_features).length > 0 && (
                   <div style={{ marginTop: 12 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-disabled)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
-                      ML Feature Contributions
+                      Why This Student Was Flagged (Key Indicators)
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {Object.entries(flag.top_features).slice(0, 4).map(([feat, val]) => {
                         const numVal = Number(val) || 0;
+                        const label = friendlyFeatureName(feat);
+                        const barPct = Math.abs(numVal) <= 1 ? Math.abs(numVal) * 100 : Math.min(Math.abs(numVal) * 20, 100);
                         return (
                           <div key={feat} className="flex items-center gap-2">
-                            <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 180, fontFamily: 'var(--font-mono)' }}>{feat}</span>
+                            <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 220, fontWeight: 500 }}>
+                              {label}
+                            </span>
                             <div className="risk-bar-track" style={{ flex: 1 }}>
                               <div
                                 className="risk-bar-fill"
                                 style={{
-                                  width: `${Math.min(Math.abs(numVal) * 100, 100).toFixed(0)}%`,
-                                  background: numVal > 0 ? 'var(--danger)' : 'var(--success)',
+                                  width: `${barPct.toFixed(0)}%`,
+                                  background: 'var(--warning)',
                                 }}
                               />
                             </div>
-                            <span style={{ fontSize: 12, fontWeight: 600, minWidth: 40, textAlign: 'right', color: numVal > 0 ? 'hsl(355,75%,65%)' : 'hsl(145,65%,55%)' }}>
-                              {numVal.toFixed(2)}
+                            <span style={{ fontSize: 12, fontWeight: 600, minWidth: 165, textAlign: 'right', color: 'hsl(35,90%,65%)' }}>
+                              {friendlyFeatureValue(label, numVal)}
                             </span>
                           </div>
                         );

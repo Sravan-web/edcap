@@ -187,8 +187,8 @@ async def seed(db: AsyncSession) -> None:
             track="A_foundational",
             risk_score=round(random.uniform(0.6, 0.95), 3),
             reasons=json.dumps([
-                "Score trend slope is negative (-3.2)",
-                f"Score below class average in 4 of last 5 assessments",
+                "Test scores have been dropping steadily (down about 3.2% per test)",
+                "Scored below the class average in 4 of the last 5 assessments",
             ]),
             top_features=json.dumps([
                 {"feature": "trend_slope", "value": -3.2, "plain_language": "Scores are declining each week"},

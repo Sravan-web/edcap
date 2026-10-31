@@ -16,6 +16,7 @@ from app.api.deps import CurrentUser
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.logging import get_logger
+from app.models.course import Course, SyllabusTopic
 from app.models.flag import RemedialQueueItem
 
 logger = get_logger(__name__)
@@ -64,11 +65,24 @@ async def get_remedial_queue(
     result = await db.execute(query)
     items = result.scalars().all()
 
+    topic_ids = {i.topic_id for i in items if i.topic_id}
+    course_ids = {i.course_id for i in items if i.course_id}
+    topics_map: dict[uuid.UUID, SyllabusTopic] = {}
+    courses_map: dict[uuid.UUID, Course] = {}
+    if topic_ids:
+        t_res = await db.execute(select(SyllabusTopic).where(SyllabusTopic.id.in_(topic_ids)))
+        topics_map = {t.id: t for t in t_res.scalars().all()}
+    if course_ids:
+        c_res = await db.execute(select(Course).where(Course.id.in_(course_ids)))
+        courses_map = {c.id: c for c in c_res.scalars().all()}
+
     return [
         {
             "id": str(i.id),
             "topic_id": str(i.topic_id),
+            "topic_name": topics_map[i.topic_id].name if i.topic_id in topics_map else "Core Concept Review",
             "course_id": str(i.course_id),
+            "course_code": courses_map[i.course_id].code if i.course_id in courses_map else "",
             "next_review_at": i.next_review_at.isoformat(),
             "interval_days": i.interval_days,
             "repetition_count": i.repetition_count,
