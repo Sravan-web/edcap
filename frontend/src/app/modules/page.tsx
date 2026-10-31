@@ -238,3 +238,4 @@ export default function ModulesPage() {
     </AppShell>
   );
 }
+

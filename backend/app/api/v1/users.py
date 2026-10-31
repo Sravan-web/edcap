@@ -1,7 +1,7 @@
 from __future__ import annotations
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, RequireAdmin
@@ -24,6 +24,8 @@ class UserProfileResponse(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     first_name: str | None = Field(None, min_length=1, max_length=100)
     last_name: str | None = Field(None, min_length=1, max_length=100)
     theme: str | None = Field(None, pattern="^(dark|light)$")

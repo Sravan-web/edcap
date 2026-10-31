@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,8 @@ router = APIRouter(prefix="/flags", tags=["flags"])
 
 
 class FlagUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     status: str | None = Field(None, pattern="^(acknowledged|dismissed|resolved|overridden)$")
     override_track: str | None = Field(None, max_length=30)
     override_note: str | None = Field(None, max_length=1000)

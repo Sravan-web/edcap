@@ -189,11 +189,30 @@ async def get_playbook(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ):
-    """Fetch a single playbook by ID."""
+    """Fetch a single playbook by ID (with BOLA/IDOR ownership validation)."""
     result = await db.execute(select(Playbook).where(Playbook.id == playbook_id))
     p = result.scalar_one_or_none()
     if not p:
         raise HTTPException(status_code=404, detail="Playbook not found.")
+
+    if current_user.role == UserRole.FACULTY.value:
+        cf = await db.execute(
+            select(CourseFaculty).where(
+                CourseFaculty.faculty_id == current_user.id,
+                CourseFaculty.course_id == p.course_id,
+            )
+        )
+        if not cf.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="Not assigned to this course.")
+    elif current_user.role == UserRole.STUDENT.value:
+        flag_res = await db.execute(
+            select(SupportFlag).where(
+                SupportFlag.id == p.flag_id,
+                SupportFlag.student_id == current_user.id,
+            )
+        )
+        if not flag_res.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="Access denied to this playbook.")
 
     return {
         "id": str(p.id),

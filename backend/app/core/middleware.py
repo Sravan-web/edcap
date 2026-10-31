@@ -85,6 +85,16 @@ def register_middleware(app: FastAPI) -> None:
                 content={"detail": "Request body too large."},
             )
 
+        # Anti-CSRF Origin validation on cookie-authenticated state-changing requests
+        if request.method in ("POST", "PUT", "PATCH", "DELETE") and request.cookies.get("access_token"):
+            origin = request.headers.get("origin")
+            if origin and origin not in settings.ALLOWED_ORIGINS:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "CSRF validation failed: untrusted Origin header."},
+                )
+
         import structlog
         with structlog.contextvars.bound_contextvars(
             request_id=request_id,

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, RequireFaculty
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.models.course import Course, CourseFaculty
+from app.models.course import Course, CourseFaculty, Enrollment
 from app.models.module import LessonModule
 from app.models.user import UserRole
 from app.services import module_service
@@ -199,5 +199,23 @@ async def get_module(module_id: uuid.UUID, current_user: CurrentUser, db: AsyncS
     mod = await db.get(LessonModule, module_id)
     if not mod:
         raise HTTPException(404, "Module not found.")
+    if current_user.role == UserRole.FACULTY.value:
+        cf = await db.execute(
+            select(CourseFaculty).where(
+                CourseFaculty.faculty_id == current_user.id,
+                CourseFaculty.course_id == mod.course_id,
+            )
+        )
+        if not cf.scalar_one_or_none():
+            raise HTTPException(403, "Not assigned to this course.")
+    elif current_user.role == UserRole.STUDENT.value:
+        enr = await db.execute(
+            select(Enrollment).where(
+                Enrollment.student_id == current_user.id,
+                Enrollment.course_id == mod.course_id,
+            )
+        )
+        if not enr.scalar_one_or_none():
+            raise HTTPException(403, "Not enrolled in this course.")
     return ModuleOut(id=str(mod.id), course_id=str(mod.course_id), taught_on=str(mod.taught_on),
                      original_filename=mod.original_filename, parse_status=mod.parse_status, file_type=mod.file_type)
