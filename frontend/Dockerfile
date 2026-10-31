@@ -1,5 +1,5 @@
 # ==============================================================================
-# EdCap AI — Frontend Dockerfile (Next.js Multi-stage Build)
+# EdCap — Frontend Dockerfile (Next.js Multi-stage Build)
 # ==============================================================================
 
 # Stage 1: Dependencies

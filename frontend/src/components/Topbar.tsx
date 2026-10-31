@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Topbar Component
+// EdCap — Topbar Component
 // ============================================================
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';

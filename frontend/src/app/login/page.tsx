@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Login Page
+// EdCap — Login Page
 // ============================================================
 import { useState, useEffect, FormEvent } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -58,14 +58,14 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="auth-logo">
           <div className="auth-logo-icon" aria-hidden="true">🎓</div>
-          <span className="auth-logo-text gradient-text">EdCap AI</span>
+          <span className="auth-logo-text gradient-text">EdCap</span>
         </div>
 
         <h1 className="auth-heading">Welcome back</h1>
         <p className="auth-subheading">Sign in to your account to continue</p>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} aria-label="Sign in to EdCap AI" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleSubmit} aria-label="Sign in to EdCap" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email address</label>
             <input

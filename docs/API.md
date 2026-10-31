@@ -1,4 +1,4 @@
-# EdCap AI — API Documentation
+# EdCap — API Documentation
 
 > **Base URL**: `http://localhost:8000/api/v1`  
 > **Authentication**: HttpOnly cookie-based JWT sessions  

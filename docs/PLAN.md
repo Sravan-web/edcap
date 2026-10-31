@@ -1,6 +1,6 @@
-# EdCap AI — Implementation Plan
+# EdCap — Implementation Plan
 
-> **Product:** EdCap AI · Early-Support & Teacher Capacity Platform for Variable-Pace Learners  
+> **Product:** EdCap · Early-Support & Teacher Capacity Platform for Variable-Pace Learners  
 > **Problem Ref:** SIH1432  
 > **Agent:** Antigravity-Edu (Principal Full-Stack + ML + Security + UI/UX)
 
@@ -104,7 +104,7 @@ miniproject/                          ← workspace root
 
 | Parameter | Default | Env Key |
 |---|---|---|
-| App name | EdCap AI | `APP_NAME` |
+| App name | EdCap | `APP_NAME` |
 | Telemetry flush interval | 5 s | `TELEMETRY_FLUSH_INTERVAL_S` |
 | CSV max size | 5 MB | `UPLOAD_MAX_CSV_MB` |
 | Module max size | 20 MB | `UPLOAD_MAX_MODULE_MB` |
@@ -146,7 +146,7 @@ miniproject/                          ← workspace root
 - Analytics endpoints: class + course-level dashboards
 
 ### Phase 3 — Content → Daily Micro-Test ✅
-- Module upload, AI question generation, faculty approval, student workspace + micro-test UI
+- Module upload, question generation, faculty approval, student workspace + micro-test UI
 - LLM prompt engineering with prompt injection defence
 - Quiz generation with validation (type mix, dedup, difficulty)
 - Student attempt flow with auto-scoring

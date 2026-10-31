@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     )
 
     # ── App ──────────────────────────────────────────────────────────────────
-    APP_NAME: str = "EdCap AI"
+    APP_NAME: str = "EdCap"
     ENVIRONMENT: Literal["development", "testing", "production"] = "development"
     DEBUG: bool = False
     SECRET_KEY: str = "CHANGE_ME_IN_PRODUCTION_USE_32_RANDOM_BYTES"
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
 
     # ── Email ────────────────────────────────────────────────────────────────
     EMAIL_PROVIDER: Literal["console", "smtp"] = "console"
-    EMAIL_FROM: str = "noreply@edcap.ai"
+    EMAIL_FROM: str = "noreply@edcap.demo"
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""

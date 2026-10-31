@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Courses Page (Faculty/Admin)
+// EdCap — Courses Page (Faculty/Admin)
 // ============================================================
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/AppShell';

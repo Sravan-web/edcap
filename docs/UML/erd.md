@@ -1,4 +1,4 @@
-# EdCap AI — Entity Relationship Diagram
+# EdCap — Entity Relationship Diagram
 
 ```mermaid
 erDiagram

@@ -1,4 +1,4 @@
-# EdCap AI — System Architecture
+# EdCap — System Architecture
 
 ```mermaid
 graph TB

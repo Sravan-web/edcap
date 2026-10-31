@@ -1,4 +1,4 @@
-# EdCap AI — Security Reference
+# EdCap — Security Reference
 
 This document maps each of the nine security requirements (§9) to the implementing code and tests.
 

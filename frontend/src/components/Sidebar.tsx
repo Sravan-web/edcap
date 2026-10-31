@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Sidebar Component
+// EdCap — Sidebar Component
 // ============================================================
 import { useAuth } from '@/lib/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
@@ -57,7 +57,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon" aria-hidden="true">🎓</div>
-        <span className="sidebar-logo-name gradient-text">EdCap AI</span>
+        <span className="sidebar-logo-name gradient-text">EdCap</span>
       </div>
 
       {/* Navigation */}
@@ -91,7 +91,7 @@ export default function Sidebar() {
           onClick={handleLogout}
           className="btn btn-ghost btn-sm w-full mt-4"
           style={{ justifyContent: 'flex-start', color: 'var(--text-muted)' }}
-          aria-label="Sign out of EdCap AI"
+          aria-label="Sign out of EdCap"
         >
           <span aria-hidden="true">🚪</span> Sign out
         </button>

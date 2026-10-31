@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Dashboard Page
+// EdCap — Dashboard Page
 // Role-aware: shows different content for faculty/student/admin
 // ============================================================
 import { useEffect, useState } from 'react';
@@ -480,7 +480,7 @@ function AdminDashboard() {
             { icon: '⚙️',  label: 'Settings',     href: '/admin#settings', desc: 'Configure thresholds, rate limits, and system parameters' },
             { icon: '📊', label: 'Analytics',    href: '/analytics', desc: 'Platform-wide course and student analytics' },
             { icon: '🚩', label: 'Support Flags',href: '/flags', desc: 'All open intervention flags across all courses' },
-            { icon: '📖', label: 'Playbooks',    href: '/playbooks', desc: 'AI-generated intervention plans and strategies' },
+            { icon: '📖', label: 'Playbooks',    href: '/playbooks', desc: 'Targeted intervention plans and strategies' },
           ].map(item => (
             <a key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
               <div

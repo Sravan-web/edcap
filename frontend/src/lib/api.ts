@@ -1,5 +1,5 @@
 // ============================================================
-// EdCap AI — API Client
+// EdCap — API Client
 // Centralised fetch wrapper for the FastAPI backend
 // ============================================================
 const API_BASE = '/api/v1';

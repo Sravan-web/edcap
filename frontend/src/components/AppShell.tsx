@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — App Shell Layout
+// EdCap — App Shell Layout
 // Wraps all authenticated pages with Sidebar + Topbar
 // ============================================================
 import { useEffect } from 'react';
@@ -31,7 +31,7 @@ export default function AppShell({ children }: AppShellProps) {
       }}>
         <div style={{ textAlign: 'center' }} role="status">
           <div className="spinner" aria-hidden="true" style={{ width: 36, height: 36, margin: '0 auto 16px' }} />
-          <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Loading EdCap AI…</div>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Loading EdCap…</div>
         </div>
       </div>
     );

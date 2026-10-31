@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Playbooks Page (Faculty)
+// EdCap — Playbooks Page (Faculty)
 // RAG-generated intervention plans with pedagogical strategies
 // ============================================================
 import { useEffect, useState } from 'react';
@@ -74,7 +74,7 @@ export default function PlaybooksPage() {
         <div className="page-header">
           <h1 className="page-title">📖 Intervention Playbooks</h1>
           <p className="page-subtitle">
-            AI-generated pedagogical intervention plans backed by 30+ research strategies
+            Pedagogical intervention plans backed by 30+ research strategies
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Remedial Queue Page (Student)
+// EdCap — Remedial Queue Page (Student)
 // Spaced-repetition review queue
 // ============================================================
 import { useEffect, useState } from 'react';

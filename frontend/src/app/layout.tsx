@@ -3,10 +3,10 @@ import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {
-  title: 'EdCap AI — Early Support & Teacher Capacity Platform',
+  title: 'EdCap — Early Support & Teacher Capacity Platform',
   description:
-    'EdCap AI helps teachers identify at-risk students early and provides AI-powered intervention playbooks. Built for SIH1432.',
-  keywords: ['EdTech', 'AI', 'student support', 'learning analytics'],
+    'EdCap helps teachers identify at-risk students early and provides targeted intervention playbooks. Built for SIH1432.',
+  keywords: ['EdTech', 'student support', 'learning analytics'],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

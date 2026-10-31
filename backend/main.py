@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version="1.0.0",
-    description="EdCap AI — Early-Support & Teacher Capacity Platform (SIH1432)",
+    description="EdCap — Early-Support & Teacher Capacity Platform (SIH1432)",
     docs_url=None if settings.is_production else "/docs",
     redoc_url=None if settings.is_production else "/redoc",
     openapi_url=None if settings.is_production else "/openapi.json",

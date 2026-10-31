@@ -1,4 +1,4 @@
-# EdCap AI — Assumptions
+# EdCap — Assumptions
 
 All assumptions were made where the specification left a choice open.
 

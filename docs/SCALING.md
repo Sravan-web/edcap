@@ -1,6 +1,6 @@
-# EdCap AI — Scale-Up Path (Documentation Only)
+# EdCap — Scale-Up Path (Documentation Only)
 
-> **Note:** The items below are NOT built. They document the production-grade path for when EdCap AI grows beyond the single-institution baseline.
+> **Note:** The items below are NOT built. They document the production-grade path for when EdCap grows beyond the single-institution baseline.
 
 ---
 

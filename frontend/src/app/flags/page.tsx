@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Support Flags Page (Faculty/Admin)
+// EdCap — Support Flags Page (Faculty/Admin)
 // ============================================================
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/AppShell';

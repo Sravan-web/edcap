@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Student Progress Page
+// EdCap — Student Progress Page
 // Assessment history, score trends, topic accuracy
 // ============================================================
 import { useEffect, useState } from 'react';

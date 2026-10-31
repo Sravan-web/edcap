@@ -1,4 +1,4 @@
-# EdCap AI
+# EdCap
 
 **Early-Support & Teacher Capacity Platform for Variable-Pace Learners**  
 _Problem Statement: SIH1432_
@@ -7,14 +7,14 @@ _Problem Statement: SIH1432_
 
 ## 🎯 Overview
 
-EdCap AI is an intelligent educational platform that detects students who are falling behind early and provides teachers with actionable playbooks. The system combines rule-based detection, ML classification, and LLM-powered pedagogical recommendations.
+EdCap is an intelligent educational platform that detects students who are falling behind early and provides teachers with actionable playbooks. The system combines rule-based detection, ML classification, and automated pedagogical recommendations.
 
 ### Key Features
 
 - **Multi-track Student Triage**: Classifies at-risk students into 3 support tracks (Foundational, Language, Engagement) plus normal
 - **Rule Engine**: 3 configurable threshold rules for early detection from assessment data
 - **ML Classifier**: LightGBM model trained on 9 behavioural features with SHAP explainability
-- **AI Quiz Generation**: LLM-powered daily micro-tests from uploaded lecture content
+- **Automated Quiz Generation**: Daily micro-tests generated from uploaded lecture content
 - **Teacher Playbooks**: RAG-based intervention plans backed by 30+ pedagogical strategies
 - **Spaced Repetition**: Configurable SR queue for remedial topics
 - **Full Security**: MFA, rate limiting, session management, audit logging, RBAC

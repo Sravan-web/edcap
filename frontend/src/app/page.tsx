@@ -20,7 +20,7 @@ export default function RootPage() {
       alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg-base)',
     }}>
-      <div className="spinner" role="status" aria-label="Loading EdCap AI" style={{ width: 32, height: 32 }} />
+      <div className="spinner" role="status" aria-label="Loading EdCap" style={{ width: 32, height: 32 }} />
     </div>
   );
 }

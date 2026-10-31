@@ -46,7 +46,7 @@ def _default_playbook_content(flag: SupportFlag) -> tuple[dict, list[str]]:
                 ],
                 "faculty_action_steps": [
                     "Share annotated step-by-step solutions for the most recently missed assessment topic.",
-                    "Assign the targeted foundational remedial module in EdCap AI.",
+                    "Assign the targeted foundational remedial module in EdCap.",
                     "Check in during office hours with a low-stakes diagnostic warm-up.",
                 ],
                 "expected_outcome": "Improve foundational topic accuracy above 65% within 2 assessment cycles.",

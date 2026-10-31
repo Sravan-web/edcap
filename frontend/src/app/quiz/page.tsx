@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Daily Quiz Page (Students)
+// EdCap — Daily Quiz Page (Students)
 // ============================================================
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';

@@ -1,6 +1,6 @@
 'use client';
 // ============================================================
-// EdCap AI — Admin Console Page
+// EdCap — Admin Console Page
 // Users management + Audit logs + Settings
 // ============================================================
 import { useEffect, useState } from 'react';
