@@ -106,6 +106,13 @@ export const assessmentsApi = {
     request<Assessment>('/assessments', { method: 'POST', body: JSON.stringify(data) }),
 };
 
+// ── Modules ────────────────────────────────────────────────────
+export const modulesApi = {
+  list: (course_id?: string) => request<LessonModule[]>('/modules', { params: { course_id } }),
+  createJson: (data: { course_id: string; title: string; content: string; taught_on?: string }) =>
+    request<LessonModule>('/modules/json', { method: 'POST', body: JSON.stringify(data) }),
+};
+
 // ── Quizzes ────────────────────────────────────────────────────
 export const quizzesApi = {
   today: (course_id?: string) =>
@@ -243,6 +250,16 @@ export interface Assessment {
   title: string;
   assessment_date: string;
   topic_tag: string;
+  source?: string;
+}
+
+export interface LessonModule {
+  id: string;
+  course_id: string;
+  taught_on: string;
+  original_filename: string;
+  parse_status: string;
+  file_type: string;
 }
 
 export interface QuizSet {
