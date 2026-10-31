@@ -1,7 +1,7 @@
 'use client';
 // ============================================================
-// EdCap — Dashboard Page
-// Role-aware: shows different content for faculty/student/admin
+// EdCap — Accessible Analytics & Student Dashboard (WCAG 2.2)
+// Role-aware: Faculty, Student, and Admin views
 // ============================================================
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -22,10 +22,10 @@ function trackColor(track: string) {
 
 function trackLabel(track: string) {
   const map: Record<string, string> = {
-    A_foundational: 'Foundational',
-    B_language:     'Language',
-    C_engagement:   'Engagement',
-    normal:         'Normal',
+    A_foundational: 'Core Concepts',
+    B_language:     'Reading & Notes',
+    C_engagement:   'Daily Practice',
+    normal:         'On Track',
   };
   return map[track] ?? track;
 }
@@ -75,50 +75,53 @@ function FacultyDashboard() {
     <>
       <Topbar current="Dashboard" breadcrumb="Faculty" />
       <div className="app-content">
-        {/* Welcome banner */}
+        {/* Hero Welcome Banner */}
         <div
           className="card card-padding mb-6"
           style={{
-            background: 'linear-gradient(135deg, rgba(99,135,255,0.12) 0%, rgba(45,200,170,0.07) 100%)',
-            borderColor: 'rgba(99,135,255,0.20)',
+            borderLeft: '4px solid var(--brand-500)',
           }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
             <div>
+              <span className="badge badge-blue" style={{ marginBottom: 8 }}>Academic Intervention Overview</span>
               <h1 className="page-title">
-                Good {getTimeOfDay()}, {user?.first_name}! 👋
+                Good {getTimeOfDay()}, Prof. {user?.last_name}
               </h1>
               <p className="page-subtitle" style={{ marginTop: 6 }}>
-                Here&apos;s your class overview for today.
+                Monitor student mastery, identify learners needing remedial support, and launch targeted study modules.
               </p>
             </div>
-            <div style={{ fontSize: 48 }}>📊</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <a href="/assessments" className="btn btn-secondary btn-sm">📋 Record Scores</a>
+              <a href="/flags" className="btn btn-primary btn-sm">🚩 Review Flags ({totalFlags})</a>
+            </div>
           </div>
         </div>
 
-        {/* Stat cards */}
+        {/* High-Contrast KPI Stat Cards */}
         <div className="grid-4 mb-6">
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,var(--brand-500),var(--accent-400))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(99,135,255,0.15)' }}>👥</div>
-            <div className="stat-value gradient-text">{totalStudents}</div>
-            <div className="stat-label">Total Students</div>
+          <div className="stat-card" style={{ '--gradient': 'var(--brand-500)' } as React.CSSProperties}>
+            <div className="stat-icon">👥</div>
+            <div className="stat-value">{totalStudents}</div>
+            <div className="stat-label">Enrolled Students</div>
           </div>
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,hsl(355,75%,55%),hsl(35,90%,55%))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(220,60,80,0.15)' }}>🚩</div>
-            <div className="stat-value" style={{ color: 'hsl(355,75%,65%)' }}>{totalFlags}</div>
-            <div className="stat-label">Open Support Flags</div>
+          <div className="stat-card" style={{ '--gradient': 'var(--danger)' } as React.CSSProperties}>
+            <div className="stat-icon">🚩</div>
+            <div className="stat-value" style={{ color: 'var(--danger)' }}>{totalFlags}</div>
+            <div className="stat-label">Students Needing Support</div>
           </div>
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,hsl(40,90%,55%),hsl(145,65%,45%))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(240,130,40,0.15)' }}>📚</div>
-            <div className="stat-value" style={{ color: 'hsl(35,90%,65%)' }}>{courses.length}</div>
+          <div className="stat-card" style={{ '--gradient': 'var(--warning)' } as React.CSSProperties}>
+            <div className="stat-icon">📚</div>
+            <div className="stat-value">{courses.length}</div>
             <div className="stat-label">Active Courses</div>
           </div>
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,hsl(145,65%,45%),var(--accent-400))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(60,180,100,0.15)' }}>📈</div>
-            <div className="stat-value" style={{ color: 'hsl(145,65%,55%)' }}>
+          <div className="stat-card" style={{ '--gradient': 'var(--accent-500)' } as React.CSSProperties}>
+            <div className="stat-icon">📈</div>
+            <div className="stat-value" style={{ color: 'var(--success)' }}>
               {avgScore !== null ? `${avgScore.toFixed(1)}%` : '–'}
             </div>
-            <div className="stat-label">Avg. Assessment Score</div>
+            <div className="stat-label">Class Assessment Average</div>
           </div>
         </div>
 
@@ -129,26 +132,26 @@ function FacultyDashboard() {
               <div className="section-header">
                 <div>
                   <div className="section-title">🚩 Open Support Flags</div>
-                  <div className="section-subtitle">Students needing immediate attention</div>
+                  <div className="section-subtitle">Learners identified for remedial coaching</div>
                 </div>
-                <a href="/flags" className="btn btn-ghost btn-sm">View all →</a>
+                <a href="/flags" className="btn btn-secondary btn-sm">View all →</a>
               </div>
             </div>
             <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
               {flags.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-state-icon">✅</div>
-                  <div className="empty-state-text">No open flags — great work!</div>
+                  <div className="empty-state-text">No open flags — all students are on track!</div>
                 </div>
               ) : (
                 <table>
                   <caption className="sr-only">Open support flags requiring immediate attention</caption>
                   <thead>
                     <tr>
-                      <th>Track</th>
-                      <th>Risk</th>
-                      <th>Reason</th>
-                      <th>Created</th>
+                      <th>Support Area</th>
+                      <th>Attention Level</th>
+                      <th>Primary Observation</th>
+                      <th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -166,9 +169,9 @@ function FacultyDashboard() {
                             aria-valuenow={Math.round(flag.risk_score * 100)}
                             aria-valuemin={0}
                             aria-valuemax={100}
-                            aria-label={`Risk score: ${Math.round(flag.risk_score * 100)}%`}
+                            aria-label={`Support priority: ${Math.round(flag.risk_score * 100)}%`}
                           >
-                            <div className="risk-bar-track" style={{ minWidth: 60 }}>
+                            <div className="risk-bar-track" style={{ minWidth: 64 }}>
                               <div
                                 className="risk-bar-fill"
                                 style={{
@@ -177,12 +180,12 @@ function FacultyDashboard() {
                                 }}
                               />
                             </div>
-                            <span style={{ fontSize: 12, color: riskColor(flag.risk_score) }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: riskColor(flag.risk_score) }}>
                               {(flag.risk_score * 100).toFixed(0)}%
                             </span>
                           </div>
                         </td>
-                        <td className="truncate" style={{ maxWidth: 120, fontSize: 12 }}>
+                        <td className="truncate" style={{ maxWidth: 160, fontSize: 13 }}>
                           {Array.isArray(flag.reasons) ? (flag.reasons[0] ?? '—') : '—'}
                         </td>
                         <td style={{ fontSize: 12 }}>{new Date(flag.created_at).toLocaleDateString()}</td>
@@ -194,14 +197,14 @@ function FacultyDashboard() {
             </div>
           </div>
 
-          {/* Course summaries */}
+          {/* Course Summaries */}
           <div className="card card-padding">
             <div className="section-header">
               <div>
-                <div className="section-title">🎓 Course Summaries</div>
-                <div className="section-subtitle">Flag distribution by track</div>
+                <div className="section-title">🎓 Course Mastery Overview</div>
+                <div className="section-subtitle">Class averages and support distribution</div>
               </div>
-              <a href="/analytics" className="btn btn-ghost btn-sm">Analytics →</a>
+              <a href="/analytics" className="btn btn-secondary btn-sm">Analytics →</a>
             </div>
 
             {analytics.length === 0 ? (
@@ -217,23 +220,23 @@ function FacultyDashboard() {
                     <div
                       key={c.course_id}
                       style={{
-                        padding: '14px 16px',
+                        padding: '16px',
                         background: 'var(--bg-overlay)',
                         borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--border)',
+                        border: '1px solid var(--glass-border)',
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 14 }}>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>
                             {course?.name ?? `Course ${c.course_id.slice(0, 8)}`}
                           </div>
                           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                            {c.student_count} students · {c.open_support_flags} flags
+                            {c.student_count} students · {c.open_support_flags} open support flags
                           </div>
                         </div>
                         {c.last_assessment_avg_pct !== null && (
-                          <span className="badge badge-blue">{c.last_assessment_avg_pct}%</span>
+                          <span className="badge badge-blue">Avg: {c.last_assessment_avg_pct}%</span>
                         )}
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -249,10 +252,10 @@ function FacultyDashboard() {
           </div>
         </div>
 
-        {/* Track breakdown */}
+        {/* Support Track Breakdown */}
         {Object.keys(trackSums).length > 0 && (
           <div className="card card-padding mt-6">
-            <div className="section-title mb-4">📊 Risk Track Breakdown</div>
+            <div className="section-title mb-4">📊 Remedial Support Categories</div>
             <div className="grid-4">
               {['A_foundational', 'B_language', 'C_engagement', 'normal'].map(track => (
                 <div
@@ -261,16 +264,16 @@ function FacultyDashboard() {
                     padding: '20px',
                     background: 'var(--bg-overlay)',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border)',
+                    border: '1px solid var(--glass-border)',
                     textAlign: 'center',
                   }}
                 >
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>
                     {track === 'A_foundational' ? '📐' :
                      track === 'B_language'     ? '💬' :
                      track === 'C_engagement'   ? '⚡' : '✅'}
                   </div>
-                  <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>
                     {trackSums[track] ?? 0}
                   </div>
                   <span className={`badge ${trackColor(track)}`}>{trackLabel(track)}</span>
@@ -310,134 +313,108 @@ function StudentDashboard() {
     <>
       <Topbar current="Dashboard" breadcrumb="Student" />
       <div className="app-content">
-        {/* Welcome banner */}
+        {/* Welcome Banner */}
         <div
           className="card card-padding mb-6"
           style={{
-            background: 'linear-gradient(135deg, rgba(45,200,170,0.10) 0%, rgba(99,135,255,0.08) 100%)',
-            borderColor: 'rgba(45,200,170,0.20)',
+            borderLeft: '4px solid var(--accent-500)',
           }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
             <div>
+              <span className="badge badge-teal" style={{ marginBottom: 8 }}>Personal Learning Hub</span>
               <h1 className="page-title">
-                Hey {user?.first_name}! 👋
+                Welcome back, {user?.first_name}!
               </h1>
               <p className="page-subtitle" style={{ marginTop: 6 }}>
-                Keep up the momentum — consistency is key.
+                Complete your daily 5-minute concept quiz and review your step-by-step remedial guides.
               </p>
             </div>
             {profile && profile.current_streak > 0 && (
               <div className="streak-widget">
-                🔥 {profile.current_streak} day streak
+                🔥 {profile.current_streak} Day Study Streak
               </div>
             )}
           </div>
         </div>
 
-        {/* Stat cards */}
+        {/* Stat Cards */}
         <div className="grid-4 mb-6">
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,hsl(35,90%,55%),hsl(355,75%,55%))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(240,130,40,0.15)' }}>🔥</div>
-            <div className="stat-value" style={{ color: 'hsl(35,90%,65%)' }}>{profile?.current_streak ?? 0}</div>
-            <div className="stat-label">Day Streak</div>
+          <div className="stat-card" style={{ '--gradient': 'var(--warning)' } as React.CSSProperties}>
+            <div className="stat-icon">🔥</div>
+            <div className="stat-value" style={{ color: 'var(--warning)' }}>{profile?.current_streak ?? 0}</div>
+            <div className="stat-label">Day Study Streak</div>
           </div>
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,var(--brand-500),var(--accent-400))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(99,135,255,0.15)' }}>⭐</div>
-            <div className="stat-value gradient-text">{profile?.retention_points ?? 0}</div>
-            <div className="stat-label">Retention Points</div>
+          <div className="stat-card" style={{ '--gradient': 'var(--brand-500)' } as React.CSSProperties}>
+            <div className="stat-icon">⭐</div>
+            <div className="stat-value" style={{ color: 'var(--brand-500)' }}>{profile?.retention_points ?? 0}</div>
+            <div className="stat-label">Mastery Points</div>
           </div>
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,hsl(145,65%,45%),var(--accent-400))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(60,180,100,0.15)' }}>📚</div>
-            <div className="stat-value" style={{ color: 'hsl(145,65%,55%)' }}>
+          <div className="stat-card" style={{ '--gradient': 'var(--accent-500)' } as React.CSSProperties}>
+            <div className="stat-icon">📚</div>
+            <div className="stat-value" style={{ color: 'var(--success)' }}>
               {profile?.enrolled_courses?.length ?? 0}
             </div>
             <div className="stat-label">Enrolled Courses</div>
           </div>
-          <div className="stat-card" style={{ '--gradient': 'linear-gradient(90deg,hsl(355,75%,55%),hsl(35,90%,55%))' } as React.CSSProperties}>
-            <div className="stat-icon" style={{ background: 'rgba(220,60,80,0.15)' }}>🚩</div>
-            <div className="stat-value" style={{ color: profile?.open_support_flags ? 'hsl(355,75%,65%)' : 'hsl(145,65%,55%)' }}>
+          <div className="stat-card" style={{ '--gradient': 'var(--danger)' } as React.CSSProperties}>
+            <div className="stat-icon">🎯</div>
+            <div className="stat-value" style={{ color: profile?.open_support_flags ? 'var(--warning)' : 'var(--success)' }}>
               {profile?.open_support_flags ?? 0}
             </div>
-            <div className="stat-label">Support Flags</div>
+            <div className="stat-label">Active Focus Areas</div>
           </div>
         </div>
 
-        {/* Quick actions */}
+        {/* Quick Actions */}
         <div className="grid-2 mb-6">
           <a href="/quiz" style={{ textDecoration: 'none' }}>
-            <div
-              className="card card-padding"
-              style={{
-                cursor: 'pointer',
-                background: 'linear-gradient(135deg, rgba(99,135,255,0.12), rgba(45,200,170,0.07))',
-                borderColor: 'rgba(99,135,255,0.20)',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-lg)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.transform = '';
-                (e.currentTarget as HTMLElement).style.boxShadow = '';
-              }}
-            >
-              <div style={{ fontSize: 36, marginBottom: 12 }}>🧪</div>
-              <div className="section-title">Take Today&apos;s Quiz</div>
-              <div className="section-subtitle" style={{ marginTop: 6 }}>
-                20 micro-questions from your latest modules
-              </div>
-              <div className="btn btn-primary btn-sm" style={{ marginTop: 16, width: 'fit-content' }}>
+            <div className="card card-padding" style={{ height: '100%' }}>
+              <span className="badge badge-blue" style={{ marginBottom: 12 }}>Daily Check-in</span>
+              <div className="section-title">🧪 Take Today&apos;s Micro-Quiz</div>
+              <p className="section-subtitle" style={{ marginTop: 6, lineHeight: 1.5 }}>
+                Reinforce your latest class lecture with adaptive practice questions and instant explanations.
+              </p>
+              <div className="btn btn-primary btn-sm" style={{ marginTop: 18 }}>
                 Start Quiz →
               </div>
             </div>
           </a>
 
-          <a href="/progress" style={{ textDecoration: 'none' }}>
-            <div
-              className="card card-padding"
-              style={{
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-lg)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.transform = '';
-                (e.currentTarget as HTMLElement).style.boxShadow = '';
-              }}
-            >
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📈</div>
-              <div className="section-title">View My Progress</div>
-              <div className="section-subtitle" style={{ marginTop: 6 }}>
-                Assessment history, topic accuracy, and trends
-              </div>
-              <div className="btn btn-secondary btn-sm" style={{ marginTop: 16, width: 'fit-content' }}>
-                View Progress →
+          <a href="/remedial" style={{ textDecoration: 'none' }}>
+            <div className="card card-padding" style={{ height: '100%' }}>
+              <span className="badge badge-teal" style={{ marginBottom: 12 }}>Step-by-Step Support</span>
+              <div className="section-title">🔁 Open My Remedial Study Plan</div>
+              <p className="section-subtitle" style={{ marginTop: 6, lineHeight: 1.5 }}>
+                Access simplified concept breakdowns, visual examples, and guided practice tailored to you.
+              </p>
+              <div className="btn btn-secondary btn-sm" style={{ marginTop: 18 }}>
+                Open Study Plan →
               </div>
             </div>
           </a>
         </div>
 
+        {/* Study Habits */}
         <div className="card card-padding">
-          <div className="section-title mb-4">🎯 Learning Tips</div>
+          <div className="section-title mb-4">🎯 Recommended Study Routine</div>
           <div className="grid-3">
             {[
-              { icon: '🔥', tip: 'Keep your streak alive by answering today\'s quiz!' },
-              { icon: '🔁', tip: 'Review your remedial queue to reinforce weak topics.' },
-              { icon: '📖', tip: 'Re-read modules where your topic accuracy is below 60%.' },
+              { icon: '🔥', title: '1. Daily 5-Minute Quiz', tip: 'Complete today\'s micro-quiz to lock in lecture concepts before they fade.' },
+              { icon: '🔁', title: '2. Guided Remedial Steps', tip: 'Work through your personalized remedial cards for any topic below 65%.' },
+              { icon: '📈', title: '3. Track Weekly Growth', tip: 'Check your Progress page to see your topic accuracy climb week over week.' },
             ].map((t, i) => (
               <div
                 key={i}
                 style={{
-                  padding: 16, background: 'var(--bg-overlay)',
-                  borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
+                  padding: 18,
+                  background: 'var(--bg-overlay)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--glass-border)',
                 }}
               >
                 <div style={{ fontSize: 24, marginBottom: 8 }}>{t.icon}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>{t.title}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{t.tip}</div>
               </div>
             ))}
@@ -457,40 +434,33 @@ function AdminDashboard() {
       <div className="app-content">
         <div
           className="card card-padding mb-6"
-          style={{
-            background: 'linear-gradient(135deg, rgba(150,90,240,0.12) 0%, rgba(99,135,255,0.08) 100%)',
-            borderColor: 'rgba(150,90,240,0.20)',
-          }}
+          style={{ borderLeft: '4px solid var(--brand-600)' }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="page-title">Admin Console 🔑</h1>
+              <span className="badge badge-purple" style={{ marginBottom: 8 }}>System Administration</span>
+              <h1 className="page-title">Admin Console</h1>
               <p className="page-subtitle" style={{ marginTop: 6 }}>
-                Welcome, {user?.first_name}. Full system access enabled.
+                Welcome, {user?.first_name}. Manage institutional accounts, audit trails, and detection rules.
               </p>
             </div>
-            <div style={{ fontSize: 48 }}>⚙️</div>
+            <div style={{ fontSize: 40 }}>⚙️</div>
           </div>
         </div>
 
         <div className="grid-3">
           {[
-            { icon: '👥', label: 'Manage Users', href: '/admin', desc: 'View all users, change roles, activate/deactivate accounts' },
-            { icon: '📋', label: 'Audit Logs',   href: '/admin#audit', desc: 'Immutable audit trail of all privileged actions' },
-            { icon: '⚙️',  label: 'Settings',     href: '/admin#settings', desc: 'Configure thresholds, rate limits, and system parameters' },
-            { icon: '📊', label: 'Analytics',    href: '/analytics', desc: 'Platform-wide course and student analytics' },
-            { icon: '🚩', label: 'Support Flags',href: '/flags', desc: 'All open intervention flags across all courses' },
-            { icon: '📖', label: 'Playbooks',    href: '/playbooks', desc: 'Targeted intervention plans and strategies' },
+            { icon: '👥', label: 'Manage Users',  href: '/admin',          desc: 'View all users, assign roles, and activate or suspend accounts' },
+            { icon: '📋', label: 'Audit Logs',    href: '/admin#audit',    desc: 'Tamper-evident security audit trail of all privileged actions' },
+            { icon: '⚙️', label: 'System Rules',  href: '/admin#settings', desc: 'Configure early-warning thresholds, quiz timing, and parameters' },
+            { icon: '📊', label: 'Analytics',     href: '/analytics',      desc: 'Institution-wide course mastery and intervention analytics' },
+            { icon: '🚩', label: 'Support Flags', href: '/flags',          desc: 'All active student support flags across departments' },
+            { icon: '📖', label: 'Playbooks',     href: '/playbooks',      desc: 'Faculty intervention playbooks and remedial strategies' },
           ].map(item => (
             <a key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
-              <div
-                className="card card-padding"
-                style={{ cursor: 'pointer', height: '100%', transition: 'transform 0.2s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = ''}
-              >
-                <div style={{ fontSize: 32, marginBottom: 12 }}>{item.icon}</div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{item.label}</div>
+              <div className="card card-padding" style={{ cursor: 'pointer', height: '100%' }}>
+                <div style={{ fontSize: 28, marginBottom: 12 }}>{item.icon}</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 6 }}>{item.label}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>{item.desc}</div>
               </div>
             </a>
