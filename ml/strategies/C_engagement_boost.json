@@ -1,0 +1,31 @@
+{
+  "id": "C_engagement_boost",
+  "track": "C_engagement",
+  "title": "Re-engagement & Motivation Intervention",
+  "description": "Address declining participation and engagement through motivational strategies and structured check-ins.",
+  "target_features": ["streak_consistency", "velocity_decay_score", "persistence_decay_rate"],
+  "actions": [
+    {
+      "type": "check_in",
+      "label": "Personal Wellbeing Check-in",
+      "description": "Brief 1:1 with the teacher to understand barriers (personal, workload, interest)."
+    },
+    {
+      "type": "goal_setting",
+      "label": "Micro-goal Setting",
+      "description": "Help student set a specific, achievable 2-week goal related to the course."
+    },
+    {
+      "type": "resource",
+      "label": "Real-World Application Story",
+      "description": "Share a compelling real-world use case or industry story connecting the topic to a career outcome."
+    },
+    {
+      "type": "activity",
+      "label": "Choice Board",
+      "description": "Offer a menu of 3 activities from which the student selects one to demonstrate understanding."
+    }
+  ],
+  "duration_estimate_minutes": 20,
+  "references": ["Ryan & Deci Self-Determination Theory", "Dweck Growth Mindset"]
+}

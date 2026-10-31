@@ -1,0 +1,38 @@
+{
+  "accuracy": 1.0,
+  "f1_macro": 1.0,
+  "f1_weighted": 1.0,
+  "test_size": 600,
+  "confusion_matrix": [
+    [
+      132,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      90,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      78,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      300
+    ]
+  ],
+  "classes": [
+    "A_foundational",
+    "B_language",
+    "C_engagement",
+    "normal"
+  ]
+}

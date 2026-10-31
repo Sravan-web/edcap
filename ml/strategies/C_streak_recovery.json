@@ -1,0 +1,26 @@
+{
+  "id": "C_streak_recovery",
+  "track": "C_engagement",
+  "title": "Streak Recovery & Habit Rebuilding",
+  "description": "Help students who have broken their study streak rebuild consistent daily practice habits.",
+  "target_features": ["streak_consistency", "persistence_decay_rate"],
+  "actions": [
+    {
+      "type": "activity",
+      "label": "5-Minute Daily Review",
+      "description": "Assign a 5-minute quiz-of-the-day for 7 consecutive days to rebuild the study habit."
+    },
+    {
+      "type": "notification",
+      "label": "Gentle Daily Reminder",
+      "description": "Enable daily push/email reminder at a student-chosen time for 2 weeks."
+    },
+    {
+      "type": "reward",
+      "label": "Streak Badge",
+      "description": "Award a streak badge visible on the student dashboard after 7 consecutive days."
+    }
+  ],
+  "duration_estimate_minutes": 10,
+  "references": ["Fogg Behavior Model", "Duolingo Streak Research 2023"]
+}

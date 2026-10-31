@@ -1,0 +1,35 @@
+{
+  "model_type": "LGBMClassifier",
+  "n_estimators": 300,
+  "num_classes": 4,
+  "classes": [
+    "A_foundational",
+    "B_language",
+    "C_engagement",
+    "normal"
+  ],
+  "features": [
+    "velocity_decay_score",
+    "format_preference_delta",
+    "hesitation_index",
+    "persistence_decay_rate",
+    "topic_accuracy",
+    "trend_slope",
+    "streak_consistency",
+    "prereq_accuracy",
+    "reading_speed"
+  ],
+  "cv_f1_macro_mean": 0.9224,
+  "cv_f1_macro_std": 0.0171,
+  "feature_importance": {
+    "persistence_decay_rate": 4190,
+    "streak_consistency": 4001,
+    "hesitation_index": 3714,
+    "topic_accuracy": 3700,
+    "prereq_accuracy": 3582,
+    "velocity_decay_score": 3327,
+    "format_preference_delta": 3231,
+    "reading_speed": 3197,
+    "trend_slope": 2916
+  }
+}

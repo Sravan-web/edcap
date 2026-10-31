@@ -1,0 +1,26 @@
+{
+  "id": "A_prerequisite_bridge",
+  "track": "A_foundational",
+  "title": "Prerequisite Bridge Lesson",
+  "description": "Identify and directly address missing prerequisite knowledge before revisiting the target concept.",
+  "target_features": ["prereq_accuracy", "topic_accuracy"],
+  "actions": [
+    {
+      "type": "diagnostic",
+      "label": "Prerequisite Assessment",
+      "description": "5-question targeted quiz on prerequisite topics to pinpoint gaps."
+    },
+    {
+      "type": "resource",
+      "label": "Micro-lesson on Prerequisite",
+      "description": "10-minute focused explanation of the blocking prerequisite concept."
+    },
+    {
+      "type": "activity",
+      "label": "Bridge Practice",
+      "description": "4 practice questions that connect prerequisite to current topic."
+    }
+  ],
+  "duration_estimate_minutes": 30,
+  "references": ["Bloom Mastery Learning", "Gagne Conditions of Learning"]
+}

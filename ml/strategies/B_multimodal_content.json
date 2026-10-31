@@ -1,0 +1,26 @@
+{
+  "id": "B_multimodal_content",
+  "track": "B_language",
+  "title": "Multimodal Content Delivery",
+  "description": "Re-present core concepts through alternative formats (visual, audio, diagrammatic) to reduce language load.",
+  "target_features": ["format_preference_delta", "reading_speed"],
+  "actions": [
+    {
+      "type": "resource",
+      "label": "Concept Map / Diagram",
+      "description": "Provide a visual concept map of the topic structure and key relationships."
+    },
+    {
+      "type": "resource",
+      "label": "Annotated Slides",
+      "description": "Re-share lecture slides with simplified text annotations and highlighted key points."
+    },
+    {
+      "type": "activity",
+      "label": "Draw the Concept",
+      "description": "Ask student to draw or sketch how they understand the concept and submit for review."
+    }
+  ],
+  "duration_estimate_minutes": 25,
+  "references": ["Mayer Multimedia Learning", "CAST UDL Framework"]
+}

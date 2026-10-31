@@ -1,0 +1,31 @@
+{
+  "id": "B_language_support",
+  "track": "B_language",
+  "title": "Language & Terminology Support",
+  "description": "Support students whose primary barrier is academic language and domain vocabulary.",
+  "target_features": ["hesitation_index", "format_preference_delta"],
+  "actions": [
+    {
+      "type": "resource",
+      "label": "Glossary of Key Terms",
+      "description": "Provide a structured glossary with definitions, examples, and diagrams for 10–15 key domain terms."
+    },
+    {
+      "type": "activity",
+      "label": "Vocabulary Practice",
+      "description": "Matching and gap-fill exercises using domain vocabulary in context."
+    },
+    {
+      "type": "resource",
+      "label": "Bilingual/Simplified Summary",
+      "description": "Offer a simplified English or mother-tongue summary of the core lecture content."
+    },
+    {
+      "type": "discussion",
+      "label": "Peer Explanation",
+      "description": "Pair the student with a peer to explain the concept in their own words (teach-back)."
+    }
+  ],
+  "duration_estimate_minutes": 35,
+  "references": ["Nation Vocabulary Learning", "Cummins BICS/CALP framework"]
+}

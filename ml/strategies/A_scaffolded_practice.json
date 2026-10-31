@@ -1,0 +1,26 @@
+{
+  "id": "A_scaffolded_practice",
+  "track": "A_foundational",
+  "title": "Scaffolded Practice with Immediate Feedback",
+  "description": "Break complex problems into smaller, sequenced steps with guided feedback at each stage.",
+  "target_features": ["topic_accuracy", "trend_slope"],
+  "actions": [
+    {
+      "type": "resource",
+      "label": "Worked Examples Packet",
+      "description": "Provide 3–5 fully worked examples that model the target skill step by step."
+    },
+    {
+      "type": "activity",
+      "label": "Guided Practice Problems",
+      "description": "Assign 5 practice problems with hints enabled. Remove scaffolding gradually."
+    },
+    {
+      "type": "check",
+      "label": "Exit Ticket",
+      "description": "3-question formative check to confirm prerequisite understanding before moving on."
+    }
+  ],
+  "duration_estimate_minutes": 40,
+  "references": ["Vygotsky ZPD", "Rosenshine Principles of Instruction"]
+}
