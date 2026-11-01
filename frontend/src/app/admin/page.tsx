@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/AppShell';
 import Topbar from '@/components/Topbar';
+import { Icon } from '@/components/ui/Icon';
 import { adminApi, type UserProfile, type AuditLog, type Setting } from '@/lib/api';
 
 type Tab = 'users' | 'audit' | 'settings';
@@ -94,8 +95,13 @@ export default function AdminPage() {
       <Topbar breadcrumb="Admin" current="Admin Console" />
       <div className="app-content">
         <div className="page-header">
-          <h1 className="page-title">⚙️ Admin Console</h1>
-          <p className="page-subtitle">Manage users, audit logs, and system configuration</p>
+          <div>
+            <div className="page-eyebrow">
+              <Icon name="shield" size={13} /> Platform Governance
+            </div>
+            <h1 className="page-title">Admin Console</h1>
+            <p className="page-subtitle">Manage users, audit logs, and system configuration</p>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -109,8 +115,10 @@ export default function AdminPage() {
               aria-controls={`admin-panel-${t}`}
               className={`tab ${tab === t ? 'active' : ''}`}
               onClick={() => setTab(t)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}
             >
-              {t === 'users' ? '👥 Users' : t === 'audit' ? '📋 Audit Logs' : '⚙️ Settings'}
+              <Icon name={t === 'users' ? 'users' : t === 'audit' ? 'assessments' : 'settings'} size={15} />
+              <span>{t === 'users' ? 'Users' : t === 'audit' ? 'Audit Logs' : 'Settings'}</span>
             </button>
           ))}
         </div>
@@ -125,14 +133,19 @@ export default function AdminPage() {
                 <div className="card-padding" style={{ paddingBottom: 0 }}>
                   <div className="section-header">
                     <div>
-                      <div className="section-title">Registered Users</div>
+                      <div className="section-title">
+                        <Icon name="users" size={16} /> Registered Users
+                      </div>
                       <div className="section-subtitle">{users.length} total accounts</div>
                     </div>
                   </div>
                 </div>
                 <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
                   {users.length === 0 ? (
-                    <div className="empty-state"><div className="empty-state-icon" aria-hidden="true">👥</div><div className="empty-state-text">No users found</div></div>
+                    <div className="empty-state">
+                      <div className="empty-state-icon" aria-hidden="true"><Icon name="users" size={22} /></div>
+                      <div className="empty-state-text">No users found</div>
+                    </div>
                   ) : (
                     <table>
                       <caption className="sr-only">Registered users overview</caption>
@@ -167,9 +180,13 @@ export default function AdminPage() {
                               </span>
                             </td>
                             <td>
-                              {u.mfa_enabled
-                                ? <span className="badge badge-teal">🔐 Enabled</span>
-                                : <span className="badge badge-gray">Disabled</span>}
+                              {u.mfa_enabled ? (
+                                <span className="badge badge-teal">
+                                  <Icon name="lock" size={11} /> Enabled
+                                </span>
+                              ) : (
+                                <span className="badge badge-gray">Disabled</span>
+                              )}
                             </td>
                             <td style={{ fontSize: 12 }}>
                               {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
@@ -189,7 +206,9 @@ export default function AdminPage() {
                 <div className="card-padding" style={{ paddingBottom: 0 }}>
                   <div className="section-header">
                     <div>
-                      <div className="section-title">Audit Trail</div>
+                      <div className="section-title">
+                        <Icon name="shield" size={16} /> Audit Trail
+                      </div>
                       <div className="section-subtitle">Immutable log of all privileged actions</div>
                     </div>
                     <span className="badge badge-purple">{logs.length} entries</span>
@@ -197,7 +216,10 @@ export default function AdminPage() {
                 </div>
                 <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
                   {logs.length === 0 ? (
-                    <div className="empty-state"><div className="empty-state-icon" aria-hidden="true">📋</div><div className="empty-state-text">No audit logs yet</div></div>
+                    <div className="empty-state">
+                      <div className="empty-state-icon" aria-hidden="true"><Icon name="assessments" size={22} /></div>
+                      <div className="empty-state-text">No audit logs yet</div>
+                    </div>
                   ) : (
                     <table>
                       <caption className="sr-only">Platform audit events log</caption>
@@ -239,14 +261,19 @@ export default function AdminPage() {
                 <div className="card-padding" style={{ paddingBottom: 0 }}>
                   <div className="section-header">
                     <div>
-                      <div className="section-title">System Settings</div>
+                      <div className="section-title">
+                        <Icon name="settings" size={16} /> System Settings
+                      </div>
                       <div className="section-subtitle">Configure thresholds and platform parameters</div>
                     </div>
                   </div>
                 </div>
                 <div style={{ padding: '0 24px 24px' }}>
                   {settings.length === 0 ? (
-                    <div className="empty-state"><div className="empty-state-icon" aria-hidden="true">⚙️</div><div className="empty-state-text">No settings found</div></div>
+                    <div className="empty-state">
+                      <div className="empty-state-icon" aria-hidden="true"><Icon name="settings" size={22} /></div>
+                      <div className="empty-state-text">No settings found</div>
+                    </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {settings.map(s => (
@@ -258,6 +285,7 @@ export default function AdminPage() {
                             background: 'var(--bg-overlay)',
                             borderRadius: 'var(--radius-md)',
                             border: '1px solid var(--border)',
+                            flexWrap: 'wrap',
                           }}
                         >
                           <div style={{ flex: 1 }}>
@@ -303,7 +331,7 @@ export default function AdminPage() {
                                 aria-label={`Edit setting ${s.key}`}
                                 onClick={() => { setEditingKey(s.key); setEditingValue(s.value); }}
                               >
-                                ✏️ Edit
+                                <Icon name="edit" size={14} /> Edit
                               </button>
                             </>
                           )}
@@ -320,7 +348,8 @@ export default function AdminPage() {
 
       {toast && (
         <div className={`toast ${toast.includes('Failed') ? 'error' : 'success'}`} role="alert" aria-live="polite">
-          <span aria-hidden="true">{toast.includes('Failed') ? '❌ ' : '✅ '}</span>{toast}
+          <Icon name={toast.includes('Failed') ? 'xCircle' : 'checkCircle'} size={15} />
+          <span>{toast}</span>
         </div>
       )}
     </AppShell>

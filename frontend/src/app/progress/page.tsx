@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import AppShell from '@/components/AppShell';
 import Topbar from '@/components/Topbar';
+import StatCard from '@/components/exam/StatCard';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { studentsApi, coursesApi, type AssessmentHistory, type SupportFlag, type Course } from '@/lib/api';
 
 export default function ProgressPage() {
@@ -49,12 +51,22 @@ export default function ProgressPage() {
 
   function trackLabel(track: string) {
     const map: Record<string, string> = {
-      A_foundational: '📐 Foundational',
-      B_language:     '💬 Language',
-      C_engagement:   '⚡ Engagement',
-      normal:         '✅ Normal',
+      A_foundational: 'Foundational',
+      B_language:     'Language',
+      C_engagement:   'Engagement',
+      normal:         'Normal',
     };
     return map[track] ?? track;
+  }
+
+  function trackIcon(track: string): IconName {
+    const map: Record<string, IconName> = {
+      A_foundational: 'ruler',
+      B_language:     'message',
+      C_engagement:   'zap',
+      normal:         'checkCircle',
+    };
+    return map[track] ?? 'flag';
   }
 
   function trackClass(track: string) {
@@ -77,7 +89,7 @@ export default function ProgressPage() {
             id="progress-course-select"
             className="form-input"
             aria-label="Select course to view progress"
-            style={{ width: 'auto', padding: '6px 12px', fontSize: 13 }}
+            style={{ width: 'auto', padding: '7px 12px', fontSize: 13 }}
             value={selectedCourse}
             onChange={e => setSelectedCourse(e.target.value)}
           >
@@ -89,8 +101,13 @@ export default function ProgressPage() {
       />
       <div className="app-content">
         <div className="page-header">
-          <h1 className="page-title">📈 My Progress</h1>
-          <p className="page-subtitle">Assessment history and support flags</p>
+          <div>
+            <div className="page-eyebrow">
+              <Icon name="progress" size={13} /> Learner Performance Telemetry
+            </div>
+            <h1 className="page-title">My Progress</h1>
+            <p className="page-subtitle">Assessment history, topic trajectory, and support flags</p>
+          </div>
         </div>
 
         {loading ? (
@@ -99,39 +116,41 @@ export default function ProgressPage() {
           <>
             {/* Summary stats */}
             <div className="grid-3 mb-6">
-              <div className="card card-padding">
-                <div style={{ fontSize: 28, marginBottom: 6 }}>📝</div>
-                <div style={{ fontSize: 32, fontWeight: 700 }} className="gradient-text">
-                  {history.length}
-                </div>
-                <div className="text-muted text-sm">Assessments Taken</div>
-              </div>
-              <div className="card card-padding">
-                <div style={{ fontSize: 28, marginBottom: 6 }}>📊</div>
-                <div style={{ fontSize: 32, fontWeight: 700, color: avgPct && parseFloat(avgPct) >= 60 ? 'hsl(145,65%,55%)' : 'hsl(35,90%,65%)' }}>
-                  {avgPct !== null ? `${avgPct}%` : '—'}
-                </div>
-                <div className="text-muted text-sm">Average Score</div>
-              </div>
-              <div className="card card-padding">
-                <div style={{ fontSize: 28, marginBottom: 6 }}>🏆</div>
-                <div style={{ fontSize: 32, fontWeight: 700, color: 'hsl(35,90%,65%)' }}>
-                  {bestPct !== null ? `${bestPct}%` : '—'}
-                </div>
-                <div className="text-muted text-sm">Best Score</div>
-              </div>
+              <StatCard
+                label="Assessments Completed"
+                value={history.length}
+                subtext="Recorded tests in this course"
+                icon="assessments"
+                accentColor="indigo"
+              />
+              <StatCard
+                label="Average Score"
+                value={avgPct !== null ? `${avgPct}%` : '—'}
+                subtext="Cumulative course accuracy"
+                icon="analytics"
+                accentColor={avgPct && parseFloat(avgPct) >= 60 ? 'emerald' : 'amber'}
+              />
+              <StatCard
+                label="Highest Score"
+                value={bestPct !== null ? `${bestPct}%` : '—'}
+                subtext="Personal best benchmark"
+                icon="award"
+                accentColor="violet"
+              />
             </div>
 
             <div className="grid-2">
               {/* Assessment history */}
               <div className="card">
                 <div className="card-padding" style={{ paddingBottom: 0 }}>
-                  <div className="section-title">📋 Assessment History</div>
+                  <div className="section-title">
+                    <Icon name="assessments" size={16} /> Assessment History
+                  </div>
                 </div>
                 <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
                   {history.length === 0 ? (
                     <div className="empty-state">
-                      <div className="empty-state-icon">📝</div>
+                      <div className="empty-state-icon"><Icon name="assessments" size={22} /></div>
                       <div className="empty-state-text">No assessments for this course yet</div>
                     </div>
                   ) : (
@@ -154,15 +173,16 @@ export default function ProgressPage() {
                             <td>
                               <span className="badge badge-gray" style={{ fontSize: 11 }}>{h.topic_tag}</span>
                             </td>
-                            <td className="text-sm">
+                            <td className="font-mono text-sm">
                               {h.score}/{h.max_score}
                             </td>
                             <td>
                               <span
+                                className="font-mono"
                                 style={{
                                   fontWeight: 700,
-                                  color: h.percentage >= 70 ? 'hsl(145,65%,55%)' :
-                                         h.percentage >= 50 ? 'hsl(35,90%,65%)' : 'hsl(355,75%,65%)',
+                                  color: h.percentage >= 70 ? 'var(--success)' :
+                                         h.percentage >= 50 ? 'var(--warning)' : 'var(--danger)',
                                 }}
                               >
                                 {h.percentage}%
@@ -179,7 +199,9 @@ export default function ProgressPage() {
               {/* Support Flags */}
               <div className="card card-padding">
                 <div className="section-header">
-                  <div className="section-title">🚩 My Support Flags</div>
+                  <div className="section-title">
+                    <Icon name="flag" size={16} /> My Support Flags
+                  </div>
                   <span className={`badge ${flags.filter(f => f.status === 'open').length > 0 ? 'badge-red' : 'badge-green'}`}>
                     {flags.filter(f => f.status === 'open').length} open
                   </span>
@@ -187,7 +209,7 @@ export default function ProgressPage() {
 
                 {flags.length === 0 ? (
                   <div className="empty-state">
-                    <div className="empty-state-icon">✅</div>
+                    <div className="empty-state-icon"><Icon name="checkCircle" size={22} /></div>
                     <div className="empty-state-text">You&apos;re on track — no active support flags!</div>
                   </div>
                 ) : (
@@ -207,7 +229,10 @@ export default function ProgressPage() {
                         }}
                       >
                         <div className="flex items-center justify-between mb-4" style={{ marginBottom: 8 }}>
-                          <span className={trackClass(f.track)}>{trackLabel(f.track)}</span>
+                          <span className={trackClass(f.track)}>
+                            <Icon name={trackIcon(f.track)} size={12} />
+                            {trackLabel(f.track)}
+                          </span>
                           <span className={`badge ${f.status === 'open' ? 'badge-red' : f.status === 'resolved' ? 'badge-green' : 'badge-gray'}`}>
                             {f.status}
                           </span>
@@ -241,13 +266,15 @@ export default function ProgressPage() {
             {/* Score trend visual */}
             {history.length > 1 && (
               <div className="card card-padding mt-6" role="region" aria-label="Score trend analysis">
-                <div className="section-title mb-4">📉 Score Trend</div>
+                <div className="section-title mb-4">
+                  <Icon name="trendingUp" size={16} /> Score Trend
+                </div>
                 <div
                   role="img"
                   aria-label="Score trend chart showing chronological performance on recent assessments"
-                  style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 100 }}
+                  style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 110 }}
                 >
-                  {history.slice(0, 10).reverse().map((h, i) => (
+                  {history.slice(0, 10).reverse().map((h) => (
                     <div key={h.assessment_id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       <div
                         role="img"
@@ -257,17 +284,17 @@ export default function ProgressPage() {
                           height: `${Math.max(h.percentage, 5)}%`,
                           maxHeight: '100%',
                           background: h.percentage >= 70
-                            ? 'linear-gradient(180deg,hsl(145,65%,45%),hsl(145,65%,30%))'
+                            ? 'var(--success)'
                             : h.percentage >= 50
-                            ? 'linear-gradient(180deg,hsl(40,90%,55%),hsl(40,90%,35%))'
-                            : 'linear-gradient(180deg,hsl(355,75%,55%),hsl(355,75%,35%))',
+                            ? 'var(--warning)'
+                            : 'var(--danger)',
                           borderRadius: '4px 4px 0 0',
                           minHeight: 4,
                           transition: 'height 0.5s ease',
                         }}
                         title={`${h.percentage}% on ${h.assessment_date}`}
                       />
-                      <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>
+                      <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-disabled)' }}>
                         {new Date(h.assessment_date).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
                       </span>
                     </div>

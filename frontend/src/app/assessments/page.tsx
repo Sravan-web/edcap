@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/AppShell';
 import Topbar from '@/components/Topbar';
+import { Icon } from '@/components/ui/Icon';
 import { assessmentsApi, coursesApi, type Assessment, type Course } from '@/lib/api';
 
 export default function AssessmentsPage() {
@@ -114,14 +115,15 @@ export default function AssessmentsPage() {
               download="assessment_import_template.csv"
               className="btn btn-secondary btn-sm"
             >
-              📥 CSV Template
+              <Icon name="download" size={14} /> CSV Template
             </a>
             <label
               htmlFor="csv-upload-input"
               className="btn btn-secondary btn-sm"
               style={{ cursor: uploadingCsv ? 'wait' : 'pointer', margin: 0 }}
             >
-              {uploadingCsv ? 'Uploading…' : '📤 Import Scores CSV'}
+              <Icon name="upload" size={14} />
+              <span>{uploadingCsv ? 'Uploading…' : 'Import Scores CSV'}</span>
               <input
                 id="csv-upload-input"
                 type="file"
@@ -136,7 +138,7 @@ export default function AssessmentsPage() {
               className="btn btn-primary btn-sm"
               onClick={() => setShowForm(v => !v)}
             >
-              + New Assessment
+              <Icon name="plus" size={14} /> New Assessment
             </button>
           </div>
         }
@@ -144,21 +146,24 @@ export default function AssessmentsPage() {
 
       <div className="app-content">
         <div className="page-header">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="page-title">📋 Assessments</h1>
-              <p className="page-subtitle">
-                Record class tests and import score sheets to automatically identify students needing early support
-              </p>
+          <div>
+            <div className="page-eyebrow">
+              <Icon name="assessments" size={13} /> Evaluation Registry
             </div>
-            <span className="badge badge-blue">{assessments.length} assessments</span>
+            <h1 className="page-title">Assessments</h1>
+            <p className="page-subtitle">
+              Record class tests and import score sheets to automatically identify students needing early support
+            </p>
           </div>
+          <span className="badge badge-blue">{assessments.length} assessments</span>
         </div>
 
         {/* Create Assessment Form */}
         {showForm && (
           <div className="card card-padding mb-6" role="region" aria-label="New assessment form">
-            <div className="section-title mb-4">✏️ Create Assessment</div>
+            <div className="section-title mb-4">
+              <Icon name="edit" size={16} /> Create Assessment
+            </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <div className="form-group" style={{ flex: '1 1 200px' }}>
                 <label className="form-label" htmlFor="assessment-course">Course</label>
@@ -245,7 +250,7 @@ export default function AssessmentsPage() {
         ) : assessments.length === 0 ? (
           <div className="card card-padding">
             <div className="empty-state">
-              <div className="empty-state-icon" aria-hidden="true">📋</div>
+              <div className="empty-state-icon" aria-hidden="true"><Icon name="assessments" size={22} /></div>
               <div className="empty-state-text">No assessments found for this selection.</div>
             </div>
           </div>
@@ -292,10 +297,10 @@ export default function AssessmentsPage() {
 
       {toast && (
         <div className={`toast ${toast.includes('Failed') || toast.includes('failed') ? 'error' : 'success'}`} role="alert" aria-live="polite">
-          <span aria-hidden="true">{toast.includes('Failed') || toast.includes('failed') ? '❌ ' : '✅ '}</span>{toast}
+          <Icon name={toast.includes('Failed') || toast.includes('failed') ? 'xCircle' : 'checkCircle'} size={15} />
+          <span>{toast}</span>
         </div>
       )}
     </AppShell>
   );
 }
-

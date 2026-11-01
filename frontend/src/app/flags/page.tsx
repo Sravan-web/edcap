@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/AppShell';
 import Topbar from '@/components/Topbar';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { flagsApi, coursesApi, type SupportFlag, type Course } from '@/lib/api';
 
 const TRACKS = ['all', 'A_foundational', 'B_language', 'C_engagement', 'normal'];
@@ -12,12 +13,22 @@ const STATUSES = ['open', 'acknowledged', 'resolved', 'dismissed'];
 
 function trackLabel(track: string) {
   const map: Record<string, string> = {
-    A_foundational: '📐 Foundational',
-    B_language:     '💬 Language',
-    C_engagement:   '⚡ Engagement',
-    normal:         '✅ Normal',
+    A_foundational: 'Foundational',
+    B_language:     'Language',
+    C_engagement:   'Engagement',
+    normal:         'Normal',
   };
   return map[track] ?? track;
+}
+
+function trackIcon(track: string): IconName {
+  const map: Record<string, IconName> = {
+    A_foundational: 'ruler',
+    B_language:     'message',
+    C_engagement:   'zap',
+    normal:         'checkCircle',
+  };
+  return map[track] ?? 'flag';
 }
 
 function trackClass(track: string) {
@@ -31,9 +42,9 @@ function trackClass(track: string) {
 }
 
 function riskColor(score: number) {
-  if (score >= 0.75) return 'hsl(355,75%,65%)';
-  if (score >= 0.45) return 'hsl(35,90%,65%)';
-  return 'hsl(145,65%,55%)';
+  if (score >= 0.75) return 'var(--danger)';
+  if (score >= 0.45) return 'var(--warning)';
+  return 'var(--success)';
 }
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -122,13 +133,16 @@ export default function FlagsPage() {
       <Topbar breadcrumb="Faculty" current="Support Flags" />
       <div className="app-content">
         <div className="page-header">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="page-title">🚩 Support Flags</h1>
-              <p className="page-subtitle">At-risk student interventions detected by the rule engine and ML classifier</p>
+          <div>
+            <div className="page-eyebrow">
+              <Icon name="flag" size={13} /> Early Intervention Queue
             </div>
-            <span className="badge badge-red">{flags.length} flags</span>
+            <h1 className="page-title">Support Flags</h1>
+            <p className="page-subtitle">At-risk student interventions detected by the rule engine and ML classifier</p>
           </div>
+          <span className="badge badge-red">
+            <Icon name="flag" size={12} /> {flags.length} flags
+          </span>
         </div>
 
         {/* Filters */}
@@ -162,7 +176,7 @@ export default function FlagsPage() {
         ) : flags.length === 0 ? (
           <div className="card card-padding">
             <div className="empty-state">
-              <div className="empty-state-icon" aria-hidden="true">✅</div>
+              <div className="empty-state-icon" aria-hidden="true"><Icon name="checkCircle" size={22} /></div>
               <div className="empty-state-text">No flags match the current filters</div>
             </div>
           </div>
@@ -181,9 +195,12 @@ export default function FlagsPage() {
                   }`,
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className={trackClass(flag.track)}>{trackLabel(flag.track)}</span>
+                <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 12 }}>
+                  <div className="flex items-center gap-2">
+                    <span className={trackClass(flag.track)}>
+                      <Icon name={trackIcon(flag.track)} size={12} />
+                      {trackLabel(flag.track)}
+                    </span>
                     <span className={`badge ${flag.status === 'open' ? 'badge-red' : flag.status === 'resolved' ? 'badge-green' : 'badge-gray'}`}>
                       {flag.status}
                     </span>
@@ -193,7 +210,7 @@ export default function FlagsPage() {
                   <div className="flex items-center gap-2">
                     <div
                       className="risk-bar"
-                      style={{ width: 120 }}
+                      style={{ width: 130 }}
                       role="progressbar"
                       aria-valuenow={Math.round(flag.risk_score * 100)}
                       aria-valuemin={0}
@@ -209,7 +226,7 @@ export default function FlagsPage() {
                           }}
                         />
                       </div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: riskColor(flag.risk_score), minWidth: 36 }}>
+                      <span className="font-mono" style={{ fontSize: 12, fontWeight: 700, color: riskColor(flag.risk_score), minWidth: 36 }}>
                         {(flag.risk_score * 100).toFixed(0)}%
                       </span>
                     </div>
@@ -229,7 +246,7 @@ export default function FlagsPage() {
                           disabled={updatingId === flag.id}
                           onClick={() => updateFlag(flag.id, 'resolved')}
                         >
-                          Resolve
+                          <Icon name="check" size={13} /> Resolve
                         </button>
                       </>
                     )}
@@ -239,7 +256,7 @@ export default function FlagsPage() {
                         disabled={updatingId === flag.id}
                         onClick={() => updateFlag(flag.id, 'resolved')}
                       >
-                        Resolve
+                        <Icon name="check" size={13} /> Resolve
                       </button>
                     )}
                   </div>
@@ -290,7 +307,7 @@ export default function FlagsPage() {
                                 }}
                               />
                             </div>
-                            <span style={{ fontSize: 12, fontWeight: 600, minWidth: 165, textAlign: 'right', color: 'hsl(35,90%,65%)' }}>
+                            <span className="font-mono" style={{ fontSize: 12, fontWeight: 700, minWidth: 165, textAlign: 'right', color: 'var(--warning)' }}>
                               {friendlyFeatureValue(label, numVal)}
                             </span>
                           </div>
@@ -311,7 +328,8 @@ export default function FlagsPage() {
 
       {toast && (
         <div className={`toast ${toast.includes('Failed') ? 'error' : 'success'}`} role="alert" aria-live="polite">
-          <span aria-hidden="true">{toast.includes('Failed') ? '❌ ' : '✅ '}</span>{toast}
+          <Icon name={toast.includes('Failed') ? 'xCircle' : 'checkCircle'} size={15} />
+          <span>{toast}</span>
         </div>
       )}
     </AppShell>

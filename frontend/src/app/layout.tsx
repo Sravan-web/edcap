@@ -11,10 +11,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" data-theme="dark" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{var t=localStorage.getItem('edcap_theme');document.documentElement.dataset.theme=t==='light'?'light':'dark';}catch(e){}",
+          }}
+        />
       </head>
       <body>
         <a href="#main-content" className="skip-link">
