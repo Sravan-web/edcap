@@ -172,14 +172,10 @@ pytest tests/test_rule_engine.py -v
 
 ---
 
-## 📖 Documentation & B.E. CSE Mini Project Package (MECS 2026–2027)
+## 📖 Documentation
 
 | Document | Description |
 |----------|-------------|
-| [MECS_CSE_Mini_Project_Report_2026_2027.docx](docs/MECS_CSE_Mini_Project_Report_2026_2027.docx) | Print-ready B.E. CSE Mini Project Thesis (`.docx`) formatted per MECS guidelines |
-| [MECS_CSE_Mini_Project_Report_2026_2027.md](docs/MECS_CSE_Mini_Project_Report_2026_2027.md) | Full Markdown version of the B.E. CSE Mini Project Report |
-| [MECS_Status_Reports_I_II_III.docx](docs/MECS_Status_Reports_I_II_III.docx) | Status Reports I, II, and III (`.docx`) |
-| [MECS_Final_Presentation.pptx](docs/MECS_Final_Presentation.pptx) | 17-Slide Final Presentation Deck (`.pptx`) |
 | [PLAN.md](docs/PLAN.md) | Implementation plan + phase checklist |
 | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | Design decisions and assumptions |
 | [SECURITY.md](docs/SECURITY.md) | Security architecture |
