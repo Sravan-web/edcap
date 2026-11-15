@@ -12,11 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, RequireFaculty
 from app.core.database import get_db
-from app.models.assessment import Assessment, AssessmentScore
+from app.models.assessment import Assessment, AssessmentScore, StudentDiagnosticRecord
 from app.models.course import Course, CourseFaculty, Enrollment, SyllabusTopic
 from app.models.flag import EngagementStats, SupportFlag
 from app.models.quiz import QuizAttempt, QuizSet
 from app.models.user import User, UserRole
+from app.services.diagnostic_service import get_course_diagnostic_summary
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -123,6 +124,10 @@ async def course_analytics(
     """
     await _check_course_access(db, current_user, course_id)
 
+    # Ensure diagnostic ecosystem is synced for this course
+    await get_course_diagnostic_summary(db, course_id=course_id, faculty_id=current_user.id)
+    await db.commit()
+
     # Enrolled students
     enr_result = await db.execute(
         select(Enrollment.student_id).where(Enrollment.course_id == course_id)
@@ -136,6 +141,14 @@ async def course_analytics(
         user = user_result.scalar_one_or_none()
         if not user:
             continue
+
+        diag_result = await db.execute(
+            select(StudentDiagnosticRecord).where(
+                StudentDiagnosticRecord.course_id == course_id,
+                StudentDiagnosticRecord.student_id == sid,
+            ).limit(1)
+        )
+        diag = diag_result.scalar_one_or_none()
 
         scores_result = await db.execute(
             select(AssessmentScore, Assessment)
@@ -180,6 +193,13 @@ async def course_analytics(
             {
                 "student_id": str(sid),
                 "name": f"{user.first_name} {user.last_name}",
+                "tier": diag.tier if diag else "Proficient",
+                "learner_score": diag.learner_score if diag else None,
+                "marks": diag.marks if diag else None,
+                "cgpa": diag.cgpa if diag else None,
+                "remedial_assigned": diag.remedial_assigned if diag else False,
+                "remedial_completed": diag.remedial_completed if diag else False,
+                "remedial_score": diag.remedial_score if diag else None,
                 "recent_scores": scores,
                 "open_flags": open_flags,
                 "current_streak": eng.current_streak if eng else 0,

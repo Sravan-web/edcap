@@ -7,10 +7,11 @@ import AppShell from '@/components/AppShell';
 import Topbar from '@/components/Topbar';
 import StatCard from '@/components/exam/StatCard';
 import { Icon, IconTile } from '@/components/ui/Icon';
-import { remedialApi, type RemedialItem } from '@/lib/api';
+import { remedialApi, quizzesApi, type RemedialItem, type AssignedRemedialResponse } from '@/lib/api';
 
 export default function RemedialPage() {
   const [items, setItems] = useState<RemedialItem[]>([]);
+  const [remedialQuiz, setRemedialQuiz] = useState<AssignedRemedialResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -22,11 +23,10 @@ export default function RemedialPage() {
   };
 
   useEffect(() => {
-    remedialApi
-      .list()
-      .then(setItems)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    Promise.all([
+      remedialApi.list().then(setItems).catch(console.error),
+      quizzesApi.getAssignedRemedial().then(setRemedialQuiz).catch(console.error),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const complete = async (id: string) => {
@@ -75,10 +75,10 @@ export default function RemedialPage() {
             accentColor={dueItems.length > 0 ? 'rose' : 'emerald'}
           />
           <StatCard
-            label="Scheduled Upcoming Reviews"
-            value={upcomingItems.length}
-            subtext="Spaced-repetition queue"
-            icon="calendar"
+            label="20-Question Remedial Quiz"
+            value={remedialQuiz?.has_remedial ? (remedialQuiz.is_completed ? `${remedialQuiz.score_pct?.toFixed(0)}% Done` : 'Assigned') : 'Ready'}
+            subtext={remedialQuiz?.diagnostic ? `Tier: ${remedialQuiz.diagnostic.tier} (${remedialQuiz.diagnostic.learner_score}/100)` : 'Targeted concept verification'}
+            icon="exam"
             accentColor="indigo"
           />
           <StatCard
@@ -89,6 +89,37 @@ export default function RemedialPage() {
             accentColor="emerald"
           />
         </div>
+
+        {remedialQuiz?.has_remedial && remedialQuiz.quiz && (
+          <div
+            className="card card-padding mb-6"
+            style={{
+              border: '1.5px solid rgba(244, 63, 94, 0.45)',
+              background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, rgba(99, 102, 241, 0.06) 100%)',
+            }}
+          >
+            <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <div className="flex items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
+                  <span className="badge badge-red badge-dot">Assigned Remedial Assessment</span>
+                  <span className="badge badge-purple">Tier: {remedialQuiz.diagnostic?.tier}</span>
+                  <span className="badge badge-blue">{remedialQuiz.quiz.questions.length} Questions · 25 Mins</span>
+                </div>
+                <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+                  {remedialQuiz.quiz.title}
+                </h2>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Complete this 20-question remedial quiz to verify mastery across your weak dimensions ({remedialQuiz.diagnostic?.weak_dimensions?.join(', ') || 'Foundational Programming'}).
+                </p>
+              </div>
+              <a href="/quiz" className="btn btn-primary">
+                <Icon name="zap" size={15} />
+                <span>{remedialQuiz.is_completed ? 'Retake 20-Q Remedial Quiz' : 'Start 20-Q Remedial Quiz'}</span>
+                <Icon name="arrowRight" size={14} />
+              </a>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="loading-center">

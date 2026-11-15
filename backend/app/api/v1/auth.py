@@ -77,13 +77,18 @@ class MFARecoverRequest(BaseModel):
 
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
     secure = settings.is_production
+    access_max_age = (
+        settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        if settings.is_production
+        else settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
+    )
     response.set_cookie(
         "access_token",
         access_token,
         httponly=True,
         secure=secure,
         samesite="lax",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=access_max_age,
         path="/",
     )
     response.set_cookie(

@@ -59,6 +59,14 @@ const FEATURE_LABELS: Record<string, string> = {
   reading_speed: 'Reading & Comprehension Pace',
   topic_accuracy: 'Topic Mastery Score',
   weak_topic: 'Struggling Topic',
+  marks: 'Academic Test Marks',
+  class_performance: 'Active Class Performance',
+  cgpa: 'Academic CGPA',
+  analytical_thinking: 'Analytical Ability',
+  knowledge_level: 'Concept Understanding & Retention',
+  problem_solving_skills: 'Programming & Problem Solving',
+  decision_making: 'Decision Making Ability',
+  errors: 'Error Identification & Control',
 };
 
 function friendlyFeatureName(key: string): string {

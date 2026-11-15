@@ -47,6 +47,14 @@ FEATURE_FRIENDLY_LABELS: dict[str, str] = {
     "reading_speed": "Reading & Comprehension Pace",
     "topic_accuracy": "Topic Mastery Score",
     "weak_topic": "Struggling Topic",
+    "marks": "Academic Test Marks",
+    "class_performance": "Active Class Performance",
+    "cgpa": "Academic CGPA",
+    "analytical_thinking": "Analytical Ability",
+    "knowledge_level": "Concept Understanding & Retention",
+    "problem_solving_skills": "Programming & Problem Solving",
+    "decision_making": "Decision Making Ability",
+    "errors": "Error Identification & Control",
 }
 
 
@@ -154,7 +162,7 @@ async def list_flags(
             "course_id": str(f.course_id),
             "topic_id": str(f.topic_id) if f.topic_id else None,
             "track": f.track,
-            "risk_score": f.risk_score,
+            "risk_score": round(f.risk_score / 100.0, 2) if f.risk_score > 1.0 else f.risk_score,
             "reasons": _parse_reasons(f.reasons),
             "top_features": _parse_top_features(f.top_features),
             "status": f.status,

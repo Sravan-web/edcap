@@ -7,7 +7,8 @@ from __future__ import annotations
 import json
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,10 +19,89 @@ from app.models.course import Enrollment, SyllabusTopic
 from app.models.flag import EngagementStats, RemedialQueueItem, SupportFlag
 from app.models.quiz import QuizAttempt, QuizSet
 from app.models.user import User, UserRole
+from app.services import bulk_diagnostic_service
 
 from app.api.v1.flags import _parse_reasons, _parse_top_features
 
 router = APIRouter(prefix="/students", tags=["students"])
+
+
+@router.get("/template")
+async def download_bulk_student_template(
+    format: str = Query(default="xlsx", pattern="^(xlsx|csv)$"),
+):
+    """
+    Generates and returns a downloadable .xlsx (or .csv) sample template
+    with pre-formatted headers and sample rows for classroom bulk upload.
+    """
+    if format.lower() == "csv":
+        csv_text = bulk_diagnostic_service.generate_csv_template_str()
+        return PlainTextResponse(
+            content=csv_text,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": 'attachment; filename="EdCap_Student_Bulk_Template.csv"'
+            },
+        )
+
+    xlsx_bytes = bulk_diagnostic_service.generate_xlsx_template_bytes()
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": 'attachment; filename="EdCap_Student_Bulk_Template.xlsx"'
+        },
+    )
+
+
+@router.post("/bulk-upload", dependencies=[RequireFaculty])
+async def bulk_upload_students(
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+    course_id: uuid.UUID | None = Query(default=None),
+    form_course_id: str | None = Form(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Enterprise Bulk Excel (.xlsx, .xls) and CSV (.csv) Student Ingestion & ML Classification Pipeline.
+    Parses and sanitizes the file in-memory, flags malformed rows without crashing the batch,
+    executes Scikit-Learn clustering + threshold classification, and assigns remedial quizzes to Slow Learners.
+    """
+    filename = file.filename or "upload.csv"
+    if not filename.lower().endswith((".xlsx", ".xls", ".csv")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported file format. Please upload a .xlsx, .xls, or .csv file.",
+        )
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty.",
+        )
+
+    resolved_course_id = course_id
+    if not resolved_course_id and form_course_id:
+        try:
+            resolved_course_id = uuid.UUID(form_course_id)
+        except ValueError:
+            pass
+
+    try:
+        summary = await bulk_diagnostic_service.process_bulk_student_upload(
+            db,
+            content=content,
+            filename=filename,
+            faculty_id=current_user.id,
+            course_id=resolved_course_id,
+        )
+        return summary
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 def _check_faculty_or_self(current_user: User, student_id: uuid.UUID) -> None:
@@ -108,7 +188,7 @@ async def get_student_flags(
             "course_id": str(f.course_id),
             "topic_id": str(f.topic_id) if f.topic_id else None,
             "track": f.track,
-            "risk_score": f.risk_score,
+            "risk_score": round(f.risk_score / 100.0, 2) if f.risk_score > 1.0 else f.risk_score,
             "reasons": _parse_reasons(f.reasons),
             "top_features": _parse_top_features(f.top_features),
             "status": f.status,

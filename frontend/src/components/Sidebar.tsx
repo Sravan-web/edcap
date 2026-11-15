@@ -19,11 +19,11 @@ const NAV_ITEMS: NavItem[] = [
   { icon: 'dashboard',   label: 'Dashboard',     href: '/dashboard',   section: 'overview' },
   { icon: 'analytics',   label: 'Analytics',     href: '/analytics',   section: 'overview', roles: ['faculty', 'admin'] },
 
-  { icon: 'courses',     label: 'Courses',       href: '/courses',     section: 'academic', roles: ['faculty', 'admin'] },
-  { icon: 'modules',     label: 'Modules',       href: '/modules',     section: 'academic', roles: ['faculty', 'admin'] },
-  { icon: 'assessments', label: 'Assessments',   href: '/assessments', section: 'academic', roles: ['faculty', 'admin'] },
-  { icon: 'exam',        label: 'Exam Room',     href: '/quiz',        section: 'academic' },
-  { icon: 'progress',    label: 'My Progress',   href: '/progress',    section: 'academic', roles: ['student'] },
+  { icon: 'courses',     label: 'Courses',          href: '/courses',     section: 'academic', roles: ['faculty', 'admin'] },
+  { icon: 'modules',     label: 'Modules',          href: '/modules',     section: 'academic', roles: ['faculty', 'admin'] },
+  { icon: 'assessments', label: 'Assessments',      href: '/assessments', section: 'academic', roles: ['faculty', 'admin'] },
+  { icon: 'exam',        label: 'Remedial Quizzes', href: '/quiz',        section: 'academic', roles: ['student'] },
+  { icon: 'progress',    label: 'My Progress',      href: '/progress',    section: 'academic', roles: ['student'] },
 
   { icon: 'flag',        label: 'Support Flags', href: '/flags',       section: 'support',  roles: ['faculty', 'admin'] },
   { icon: 'playbook',    label: 'Playbooks',     href: '/playbooks',   section: 'support',  roles: ['faculty', 'admin'] },

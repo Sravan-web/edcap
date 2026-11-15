@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
         ) : detail ? (
           <>
             {/* Summary cards */}
-            <div className="grid-3 mb-6">
+            <div className="grid-4 mb-6">
               <StatCard
                 label="Enrolled Students"
                 value={detail.total_students}
@@ -82,18 +82,25 @@ export default function AnalyticsPage() {
                 accentColor="indigo"
               />
               <StatCard
+                label="Developing (Slow Learners)"
+                value={detail.student_profiles.filter(s => s.tier === 'Developing').length}
+                subtext="Assigned 20-Q Remedial Quiz"
+                icon="flag"
+                accentColor="rose"
+              />
+              <StatCard
+                label="Proficient & Advanced"
+                value={detail.student_profiles.filter(s => s.tier !== 'Developing').length}
+                subtext={`Proficient: ${detail.student_profiles.filter(s => s.tier === 'Proficient').length} · Advanced: ${detail.student_profiles.filter(s => s.tier === 'Advanced').length}`}
+                icon="award"
+                accentColor="emerald"
+              />
+              <StatCard
                 label="Topics Assessed"
                 value={detail.topic_accuracy.length}
                 subtext="Syllabus units measured"
                 icon="ruler"
-                accentColor="emerald"
-              />
-              <StatCard
-                label="Topics Below 50% Mastery"
-                value={detail.topic_accuracy.filter(t => t.avg_accuracy_pct < 50).length}
-                subtext="Require targeted remedial intervention"
-                icon="trendingDown"
-                accentColor="rose"
+                accentColor="blue"
               />
             </div>
 
@@ -179,14 +186,16 @@ export default function AnalyticsPage() {
                       <thead>
                         <tr>
                           <th>Student</th>
-                          <th>Streak</th>
+                          <th>Tier (ML)</th>
+                          <th>Marks / CGPA</th>
+                          <th>20-Q Remedial</th>
                           <th>Flags</th>
-                          <th>Last Score</th>
                         </tr>
                       </thead>
                       <tbody>
                         {detail.student_profiles.map(s => {
                           const lastScore = s.recent_scores?.[0];
+                          const tier = s.tier || 'Proficient';
                           return (
                             <tr key={s.student_id}>
                               <td className="td-primary">
@@ -194,14 +203,42 @@ export default function AnalyticsPage() {
                                   <div className="avatar avatar-sm">
                                     {s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                                   </div>
-                                  {s.name}
+                                  <div>
+                                    <div>{s.name}</div>
+                                    {s.learner_score != null && (
+                                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                        Score: {s.learner_score}/100
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </td>
                               <td>
-                                {s.current_streak > 0 ? (
-                                  <span className="badge badge-orange">
-                                    <Icon name="flame" size={12} /> {s.current_streak}d
+                                <span
+                                  className={`badge ${
+                                    tier === 'Developing'
+                                      ? 'badge-red'
+                                      : tier === 'Advanced'
+                                      ? 'badge-green'
+                                      : 'badge-blue'
+                                  }`}
+                                >
+                                  {tier}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="font-mono" style={{ fontWeight: 700, fontSize: 12.5 }}>
+                                  {s.marks != null ? `${s.marks}%` : lastScore ? `${lastScore.pct}%` : '—'}
+                                  {s.cgpa != null ? ` / ${s.cgpa}` : ''}
+                                </span>
+                              </td>
+                              <td>
+                                {s.remedial_completed ? (
+                                  <span className="badge badge-green">
+                                    Done ({s.remedial_score?.toFixed(0)}%)
                                   </span>
+                                ) : s.remedial_assigned ? (
+                                  <span className="badge badge-orange">Assigned (20 Qs)</span>
                                 ) : (
                                   <span className="text-muted">—</span>
                                 )}
@@ -210,13 +247,6 @@ export default function AnalyticsPage() {
                                 {s.open_flags > 0
                                   ? <span className="badge badge-red">{s.open_flags}</span>
                                   : <span className="badge badge-green">0</span>}
-                              </td>
-                              <td>
-                                {lastScore
-                                  ? <span className="font-mono" style={{ fontWeight: 700, color: lastScore.pct < 50 ? 'var(--danger)' : 'var(--text-primary)' }}>
-                                      {lastScore.pct}%
-                                    </span>
-                                  : <span className="text-muted">—</span>}
                               </td>
                             </tr>
                           );

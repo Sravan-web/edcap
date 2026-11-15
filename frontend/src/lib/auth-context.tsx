@@ -35,6 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const me = await usersApi.me();
+      if (typeof window !== 'undefined' && me?.email) {
+        window.localStorage.setItem('edcap_user_email', me.email);
+      }
       setUser(me);
     } catch {
       setUser(null);
@@ -45,12 +48,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refresh().finally(() => setLoading(false));
   }, [refresh]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && user?.email) {
+      window.localStorage.setItem('edcap_user_email', user.email);
+    }
+  }, [user]);
+
   const login = async (email: string, password: string) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('edcap_user_email', email.trim().toLowerCase());
+    }
     await authApi.login(email, password);
     await refresh();
   };
 
   const logout = async () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('edcap_user_email');
+    }
     await authApi.logout().catch(() => {});
     setUser(null);
   };

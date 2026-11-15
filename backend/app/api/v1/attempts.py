@@ -9,12 +9,14 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, RequireStudent
 from app.core.database import get_db
 from app.core.logging import get_logger
+from app.models.assessment import Assessment, AssessmentScore, StudentDiagnosticRecord
+from app.models.flag import EngagementStats, SupportFlag
 from app.models.quiz import QuizAnswer, QuizAttempt, QuizQuestion, QuizSet
 
 logger = get_logger(__name__)
@@ -43,7 +45,7 @@ class FinishAttemptRequest(BaseModel):
     action: str | None = None
 
 
-@router.post("/answers", status_code=200)
+@router.post("/answers", status_code=200, dependencies=[RequireStudent])
 async def submit_single_answer(
     body: SingleAnswerSubmission,
     current_user: CurrentUser,
@@ -129,7 +131,20 @@ async def start_attempt(
     existing_attempt = existing.scalar_one_or_none()
     if existing_attempt:
         if existing_attempt.completed_at:
-            raise HTTPException(status_code=409, detail="You have already completed this quiz.")
+            # Allow student to retake / practice by resetting previous attempt
+            await db.execute(delete(QuizAnswer).where(QuizAnswer.attempt_id == existing_attempt.id))
+            existing_attempt.completed_at = None
+            existing_attempt.score_raw = None
+            existing_attempt.score_pct = None
+            existing_attempt.started_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            existing_attempt.is_resumed = True
+            await db.flush()
+            return {
+                "id": str(existing_attempt.id),
+                "quiz_set_id": str(existing_attempt.quiz_set_id),
+                "started_at": existing_attempt.started_at.isoformat(),
+                "status": "retake_started",
+            }
         # Resume existing attempt
         existing_attempt.is_resumed = True
         await db.flush()
@@ -156,8 +171,8 @@ async def start_attempt(
     }
 
 
-@router.patch("/{attempt_id}", status_code=200)
-@router.patch("/{attempt_id}/finish", status_code=200)
+@router.patch("/{attempt_id}", status_code=200, dependencies=[RequireStudent])
+@router.patch("/{attempt_id}/finish", status_code=200, dependencies=[RequireStudent])
 async def finish_attempt(
     attempt_id: uuid.UUID,
     current_user: CurrentUser,
@@ -220,6 +235,90 @@ async def finish_attempt(
     attempt.score_raw = float(correct_count)
     attempt.score_pct = round(correct_count / total * 100, 2) if total else 0.0
     attempt.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # Update diagnostic record & downstream ecosystem if this was an assigned remedial quiz
+    diag_stmt = (
+        select(StudentDiagnosticRecord)
+        .where(
+            StudentDiagnosticRecord.student_id == current_user.id,
+            StudentDiagnosticRecord.remedial_quiz_id == attempt.quiz_set_id,
+        )
+    )
+    diag_res = await db.execute(diag_stmt)
+    diag_rec = diag_res.scalar_one_or_none()
+    if diag_rec:
+        diag_rec.remedial_completed = True
+        diag_rec.remedial_score = attempt.score_pct
+
+        # Record an AssessmentScore for the remedial quiz so /analytics and /progress reflect mastery
+        today = datetime.now(timezone.utc).date()
+        rem_ass_res = await db.execute(
+            select(Assessment).where(
+                Assessment.course_id == diag_rec.course_id,
+                Assessment.title == "Targeted Remedial Quiz (20 Questions)",
+            ).limit(1)
+        )
+        rem_ass = rem_ass_res.scalar_one_or_none()
+        if not rem_ass:
+            rem_ass = Assessment(
+                course_id=diag_rec.course_id,
+                title="Targeted Remedial Quiz (20 Questions)",
+                topic_tag="error_debugging",
+                assessment_date=today,
+                created_by=diag_rec.evaluated_by or current_user.id,
+            )
+            db.add(rem_ass)
+            await db.flush()
+
+        sc_res = await db.execute(
+            select(AssessmentScore).where(
+                AssessmentScore.assessment_id == rem_ass.id,
+                AssessmentScore.student_id == current_user.id,
+            ).limit(1)
+        )
+        sc_row = sc_res.scalar_one_or_none()
+        if not sc_row:
+            db.add(
+                AssessmentScore(
+                    assessment_id=rem_ass.id,
+                    student_id=current_user.id,
+                    topic_tag=rem_ass.topic_tag,
+                    score=attempt.score_pct,
+                    max_score=100.0,
+                    percentage=round(attempt.score_pct, 1),
+                )
+            )
+        else:
+            sc_row.score = attempt.score_pct
+            sc_row.max_score = 100.0
+            sc_row.percentage = round(attempt.score_pct, 1)
+
+        # Update EngagementStats
+        eng_res = await db.execute(
+            select(EngagementStats).where(
+                EngagementStats.course_id == diag_rec.course_id,
+                EngagementStats.student_id == current_user.id,
+            ).limit(1)
+        )
+        eng = eng_res.scalar_one_or_none()
+        if eng:
+            eng.current_streak += 1
+            eng.longest_streak = max(eng.longest_streak, eng.current_streak)
+            eng.retention_points += int(attempt.score_pct)
+            eng.last_activity_date = attempt.completed_at
+
+        # If student achieved >= 60% mastery on the remedial quiz, mark open SupportFlag as resolved
+        if attempt.score_pct >= 60.0:
+            fl_res = await db.execute(
+                select(SupportFlag).where(
+                    SupportFlag.student_id == current_user.id,
+                    SupportFlag.course_id == diag_rec.course_id,
+                    SupportFlag.status == "open",
+                )
+            )
+            for fl in fl_res.scalars().all():
+                fl.status = "resolved"
+                fl.override_note = f"Auto-resolved upon achieving {attempt.score_pct}% mastery on the 20-question Targeted Remedial Quiz."
 
     await db.flush()
     logger.info(

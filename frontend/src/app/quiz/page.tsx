@@ -4,6 +4,7 @@
 // Dual-Pane Live Assessment Workspace (Zero Emoji, Pure SVG Icons)
 // ============================================================
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import AppShell from '@/components/AppShell';
 import Topbar from '@/components/Topbar';
 import TimerHeader, { formatCountdown } from '@/components/exam/TimerHeader';
@@ -12,7 +13,7 @@ import QuestionPalette, { type PaletteQuestionItem, type QuestionVisitStatus } f
 import ExamModal from '@/components/exam/ExamModal';
 import StatCard from '@/components/exam/StatCard';
 import Icon, { IconTile } from '@/components/ui/Icon';
-import { quizzesApi, attemptsApi, type QuizSet, type QuizAttempt } from '@/lib/api';
+import { quizzesApi, attemptsApi, type QuizSet, type QuizAttempt, type AssignedRemedialResponse } from '@/lib/api';
 
 const OPTIONS = ['A', 'B', 'C', 'D'] as const;
 
@@ -155,20 +156,143 @@ const BUILTIN_EXAM_QUESTIONS: ExamQuestion[] = [
     correct_option: 'B',
     explanation: 'Dynamic Programming caches solutions to overlapping subproblems and combines optimal sub-solutions via optimal substructure.',
   },
+  {
+    id: 'q-11',
+    topic_tag: 'Graph Algorithms',
+    difficulty: 'Medium',
+    question_text: 'Which algorithm is designed to find single-source shortest paths in a directed or undirected graph with non-negative edge weights?',
+    option_a: "Dijkstra's Algorithm",
+    option_b: "Floyd-Warshall Algorithm",
+    option_c: "Kruskal's Algorithm",
+    option_d: "Tarjan's SCC Algorithm",
+    correct_option: 'A',
+    explanation: "Dijkstra's algorithm uses a greedy priority queue approach to find shortest paths from a source to all vertices with non-negative edge weights in O((V + E) log V).",
+  },
+  {
+    id: 'q-12',
+    topic_tag: 'Bit Manipulation',
+    difficulty: 'Easy',
+    question_text: 'What does the bitwise expression `(n > 0) && ((n & (n - 1)) == 0)` test for any positive integer n?',
+    option_a: 'Whether n is an odd number',
+    option_b: 'Whether n is an exact power of 2',
+    option_c: 'Whether n is a prime number',
+    option_d: 'Whether n is divisible by 4',
+    correct_option: 'B',
+    explanation: 'Powers of 2 have exactly one bit set in binary (e.g. 8 is 1000). Subtracting 1 flips all lower bits (7 is 0111). Their bitwise AND is 0.',
+  },
+  {
+    id: 'q-13',
+    topic_tag: 'Heaps & Priority Queues',
+    difficulty: 'Medium',
+    question_text: 'In a standard Min-Heap of n elements, what is the time complexity to retrieve the minimum element, and what is the complexity to delete it?',
+    option_a: 'O(1) retrieve minimum, O(log n) delete minimum',
+    option_b: 'O(n) retrieve minimum, O(1) delete minimum',
+    option_c: 'O(log n) retrieve minimum, O(log n) delete minimum',
+    option_d: 'O(1) retrieve minimum, O(n) delete minimum',
+    correct_option: 'A',
+    explanation: 'The minimum element is stored at the root array index 0 in O(1). Deleting the root requires swapping with the last element and heapifying down in O(log n).',
+  },
+  {
+    id: 'q-14',
+    topic_tag: 'Searching & Sorting',
+    difficulty: 'Medium',
+    question_text: 'What is the worst-case time complexity of QuickSort when the pivot is consistently chosen as the smallest or largest element?',
+    option_a: 'O(n log n)',
+    option_b: 'O(n²)',
+    option_c: 'O(n)',
+    option_d: 'O(log n)',
+    correct_option: 'B',
+    explanation: 'If partitions are maximally unbalanced (size 0 and n-1 at each recursion step), the recursion depth is n, yielding O(n²) worst-case comparisons.',
+  },
+  {
+    id: 'q-15',
+    topic_tag: 'Trees & Graphs',
+    difficulty: 'Easy',
+    question_text: 'What is the maximum number of nodes in a full binary tree of height h (where a tree with a single root node has height 1)?',
+    option_a: '2ʰ - 1',
+    option_b: '2ʰ',
+    option_c: '2ʰ⁺¹',
+    option_d: 'h²',
+    correct_option: 'A',
+    explanation: 'A binary tree of height h has at most 2⁰ + 2¹ + ... + 2ʰ⁻¹ nodes = 2ʰ - 1 nodes.',
+  },
+  {
+    id: 'q-16',
+    topic_tag: 'Graph Traversal',
+    difficulty: 'Easy',
+    question_text: 'Depth-First Search (DFS) on a graph inherently relies on which data structure for backtracking?',
+    option_a: 'Queue (FIFO)',
+    option_b: 'Stack (LIFO) or recursive call stack frames',
+    option_c: 'Hash Map with chaining',
+    option_d: 'Fibonacci Heap',
+    correct_option: 'B',
+    explanation: 'DFS explores as deep as possible along each branch before backtracking, utilizing a Last-In First-Out (LIFO) stack mechanism.',
+  },
+  {
+    id: 'q-17',
+    topic_tag: 'Arrays & Two Pointers',
+    difficulty: 'Easy',
+    question_text: 'To check if an array of size n is a palindrome in O(n) time and O(1) auxiliary space, which technique is most optimal?',
+    option_a: 'Reverse the array into a secondary buffer and compare element by element',
+    option_b: 'Two pointers starting at index 0 and index n - 1 moving toward the center',
+    option_c: 'Insert all elements into a Binary Search Tree',
+    option_d: 'Compute the sum and product of elements',
+    correct_option: 'B',
+    explanation: 'A left pointer starting at 0 and a right pointer at n - 1 compare elements and increment/decrement toward the center in O(n) time and O(1) space.',
+  },
+  {
+    id: 'q-18',
+    topic_tag: 'Algorithmic Complexity',
+    difficulty: 'Easy',
+    question_text: 'What is the auxiliary space complexity of iterative Binary Search on a sorted array of size n?',
+    option_a: 'O(1) auxiliary space',
+    option_b: 'O(log n) auxiliary space',
+    option_c: 'O(n) auxiliary space',
+    option_d: 'O(n log n) auxiliary space',
+    correct_option: 'A',
+    explanation: 'Iterative binary search maintains two integer pointer variables (low, high) and allocates no recursive stack frames or dynamic memory, using O(1) auxiliary space.',
+  },
+  {
+    id: 'q-19',
+    topic_tag: 'Greedy Algorithms',
+    difficulty: 'Medium',
+    question_text: 'In the classic Interval Scheduling / Activity Selection problem, which greedy strategy yields the maximum number of non-overlapping activities?',
+    option_a: 'Sort activities by earliest start time',
+    option_b: 'Sort activities by shortest duration',
+    option_c: 'Sort activities by earliest finish time',
+    option_d: 'Sort activities by maximum profit',
+    correct_option: 'C',
+    explanation: 'Selecting the activity with the earliest finish time leaves maximum time available for remaining activities, guaranteeing an optimal greedy solution.',
+  },
+  {
+    id: 'q-20',
+    topic_tag: 'Graph Algorithms',
+    difficulty: 'Medium',
+    question_text: 'Which data structure allows Kruskal’s Minimum Spanning Tree algorithm to efficiently detect whether adding an edge creates a cycle in a graph?',
+    option_a: 'Disjoint Set Union (DSU / Union-Find)',
+    option_b: 'Adjacency Matrix',
+    option_c: 'Red-Black Tree',
+    option_d: 'Trie',
+    correct_option: 'A',
+    explanation: 'Disjoint Set Union (Union-Find) with path compression and rank union detects cycles in near O(1) amortized time per edge inspection.',
+  },
 ];
 
 export default function QuizPage() {
+  const { user } = useAuth();
   const [quiz, setQuiz] = useState<QuizSet | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>(BUILTIN_EXAM_QUESTIONS);
   const [attempt, setAttempt] = useState<QuizAttempt | null>(null);
   const [examStarted, setExamStarted] = useState(false);
+  const [remedialData, setRemedialData] = useState<AssignedRemedialResponse | null>(null);
+  const [isRemedialMode, setIsRemedialMode] = useState(false);
 
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({});
   const [visitedIds, setVisitedIds] = useState<Set<string>>(new Set());
   const [reviewIds, setReviewIds] = useState<Set<string>>(new Set());
 
-  const EXAM_DURATION_SECONDS = 20 * 60;
+  const EXAM_DURATION_SECONDS = 30 * 60; // 30 mins for 20 questions
   const [secondsLeft, setSecondsLeft] = useState<number>(EXAM_DURATION_SECONDS);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
@@ -181,33 +305,50 @@ export default function QuizPage() {
 
   const autoSubmittedRef = useRef(false);
 
+  const applyQuestions = (qList: Array<{ id: string; question_text?: string; stem?: string; option_a: string; option_b: string; option_c: string; option_d: string; correct_option: string; explanation?: string; difficulty?: string; source_section?: string }>) => {
+    setQuestions(
+      qList.map((q, idx) => ({
+        id: q.id,
+        question_text: q.question_text || q.stem || '',
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        correct_option: (q.correct_option || 'A').toUpperCase(),
+        explanation: q.explanation || 'Review fundamental syntax, logic flow, and memory bounds.',
+        difficulty: q.difficulty || (idx % 2 === 0 ? 'Easy' : 'Medium'),
+        topic_tag: q.source_section || 'Remedial Fundamentals',
+      }))
+    );
+  };
+
   useEffect(() => {
-    quizzesApi
-      .today()
-      .then(data => {
-        setQuiz(data);
-        if (data?.questions && data.questions.length > 0) {
-          setQuestions(
-            data.questions.map((q, idx) => ({
-              id: q.id,
-              question_text: q.question_text,
-              option_a: q.option_a,
-              option_b: q.option_b,
-              option_c: q.option_c,
-              option_d: q.option_d,
-              correct_option: (q.correct_option || 'A').toUpperCase(),
-              explanation: q.explanation || 'Review the corresponding lecture module for a step-by-step derivation.',
-              difficulty: q.difficulty || (idx % 3 === 0 ? 'Easy' : idx % 3 === 1 ? 'Medium' : 'Hard'),
-              topic_tag: 'Core Syllabus',
-            }))
-          );
+    if (!user) return;
+    if (user.role !== 'student') {
+      setLoading(false);
+      return;
+    }
+    Promise.all([
+      quizzesApi.getAssignedRemedial().catch(() => null),
+      quizzesApi.today().catch(() => null),
+    ])
+      .then(([rem, daily]) => {
+        if (rem && rem.has_remedial && rem.quiz) {
+          setRemedialData(rem);
+          setIsRemedialMode(true);
+          setQuiz(rem.quiz as unknown as QuizSet);
+          if (rem.quiz.questions && rem.quiz.questions.length > 0) {
+            applyQuestions(rem.quiz.questions);
+          }
+        } else if (daily) {
+          setQuiz(daily);
+          if (daily.questions && daily.questions.length > 0) {
+            applyQuestions(daily.questions);
+          }
         }
       })
-      .catch(() => {
-        // Fallback to BUILTIN_EXAM_QUESTIONS
-      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (examStarted && questions[currentQ]) {
@@ -349,6 +490,40 @@ export default function QuizPage() {
   const reviewCount = reviewIds.size;
   const visitedUnansweredCount = paletteItems.filter(i => i.status === 'visited_unanswered').length;
   const notVisitedCount = paletteItems.filter(i => i.status === 'not_visited').length;
+
+  if (user && user.role !== 'student') {
+    return (
+      <AppShell>
+        <Topbar breadcrumb="Role Access Control" current="Student Assessment Restricted" />
+        <div className="app-content">
+          <div className="card card-padding" style={{ maxWidth: 640, margin: '48px auto', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <IconTile name="shield" tone="rose" size={48} />
+            </div>
+            <span className="badge badge-rose" style={{ marginBottom: 12 }}>
+              Role Policy Enforcement — Student Only Workspace
+            </span>
+            <h1 className="page-title" style={{ fontSize: 22, marginBottom: 8 }}>
+              Faculty &amp; Admin Accounts Cannot Attempt Student Quizzes
+            </h1>
+            <p className="page-subtitle" style={{ marginBottom: 24 }}>
+              To preserve academic integrity and assessment telemetry, only authenticated Student accounts may start or submit remedial quizzes. Faculty can generate and assign targeted 20-question remedial quizzes from the Faculty Dashboard or Assessments Suite.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <a href="/dashboard" className="btn btn-primary">
+                <Icon name="dashboard" size={15} />
+                <span>Return to Faculty Dashboard</span>
+              </a>
+              <a href="/assessments" className="btn btn-secondary">
+                <Icon name="sparkles" size={15} />
+                <span>Manage &amp; Generate Quizzes</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (loading) {
     return (
@@ -543,30 +718,71 @@ export default function QuizPage() {
 
   // ── 2. PRE-EXAM LOBBY / INSTRUCTIONS SCREEN ───────────────────────────────
   if (!examStarted) {
+    const isRemedial = Boolean(remedialData?.has_remedial && isRemedialMode);
+
     return (
       <AppShell>
-        <Topbar breadcrumb="Assessment" current="Online Examination Lobby" />
+        <Topbar breadcrumb="Assessment" current={isRemedial ? "Remedial Examination Lobby" : "Online Examination Lobby"} />
         <div className="app-content">
           <div style={{ maxWidth: 840, margin: '12px auto' }}>
+            {remedialData?.has_remedial && (
+              <div
+                className="card card-padding mb-6"
+                style={{
+                  borderLeft: '4px solid var(--rose-500, #f43f5e)',
+                  background: 'var(--surface-elevated)',
+                }}
+              >
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <span className="badge badge-rose" style={{ fontWeight: 700, fontSize: 11 }}>
+                      Assigned Remedial Assessment (Developing Learner Support)
+                    </span>
+                    <h2 style={{ fontSize: 17, fontWeight: 800, marginTop: 6, marginBottom: 4 }}>
+                      Targeted Programming Fundamentals &amp; Error Debugging
+                    </h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+                      Assigned based on your academic &amp; cognitive diagnostic evaluation. Pass with 60%+ to achieve mastery clearance.
+                    </p>
+                  </div>
+                  {remedialData.is_completed ? (
+                    <span className="badge badge-teal" style={{ fontSize: 12, padding: '6px 12px' }}>
+                      <Icon name="checkCircle" size={13} /> Completed ({remedialData.score_pct}% Mastery)
+                    </span>
+                  ) : (
+                    <span className="badge badge-rose" style={{ fontSize: 12, padding: '6px 12px' }}>
+                      <Icon name="clock" size={13} /> Pending Attempt
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="card card-padding">
               <div className="flex items-center justify-between mb-4" style={{ flexWrap: 'wrap', gap: 12 }}>
                 <div className="flex items-center gap-2">
                   <span className="badge badge-blue">CS101 / CS204</span>
-                  <span className="badge badge-teal badge-dot">Proctored Diagnostic Mode</span>
+                  <span className="badge badge-teal badge-dot">
+                    {isRemedial ? 'Remedial Mastery Assessment' : 'Proctored Diagnostic Mode'}
+                  </span>
                 </div>
                 <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                  Session ID: EXAM-{new Date().toISOString().slice(0, 10)}
+                  Session ID: {isRemedial ? 'REMEDIAL' : 'EXAM'}-{new Date().toISOString().slice(0, 10)}
                 </span>
               </div>
 
               <div className="flex items-center gap-3 mb-4">
-                <IconTile name="exam" tone="indigo" size={46} />
+                <IconTile name="exam" tone={isRemedial ? "rose" : "indigo"} size={46} />
                 <div>
                   <h1 className="page-title" style={{ fontSize: 22 }}>
-                    Data Structures, Algorithms & Core Computing Assessment
+                    {isRemedial
+                      ? 'Targeted Remedial Assessment: Programming Logic & Debugging'
+                      : 'Data Structures, Algorithms & Core Computing Assessment'}
                   </h1>
                   <p className="page-subtitle">
-                    Adaptive competency evaluation used to measure syllabus mastery and personalize your study plan.
+                    {isRemedial
+                      ? 'Step-by-step diagnostic test focusing on loop bounds, uninitialized pointers, algorithmic logic, and error detection.'
+                      : 'Adaptive competency evaluation used to measure syllabus mastery and personalize your study plan.'}
                   </p>
                 </div>
               </div>
@@ -582,7 +798,9 @@ export default function QuizPage() {
                 </div>
 
                 <div className="subcard">
-                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--success)' }}>20 Mins</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--success)' }}>
+                    {isRemedial ? '25 Mins' : '30 Mins'}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>
                     Time Allotted
                   </div>
@@ -596,7 +814,9 @@ export default function QuizPage() {
                 </div>
 
                 <div className="subcard">
-                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--warning)' }}>65%</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--warning)' }}>
+                    {isRemedial ? '60%' : '65%'}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>
                     Mastery Benchmark
                   </div>

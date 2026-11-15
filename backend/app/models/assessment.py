@@ -8,6 +8,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     Float,
@@ -15,6 +16,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -58,3 +60,63 @@ class AssessmentScore(Base):
         Index("ix_score_student_course", "student_id"),
         Index("ix_score_assessment", "assessment_id"),
     )
+
+
+class StudentDiagnosticRecord(Base):
+    """
+    Stores faculty-entered research paper parameters and ML classification:
+    - marks, class_performance, cgpa, urban_rural
+    - analytical_thinking, knowledge_level, problem_solving_skills, decision_making, errors
+    - predicted tier (Developing, Proficient, Advanced)
+    - learner_score (0-100)
+    - remedial_quiz_assigned (bool)
+    - remedial_quiz_id (UUID | None)
+    - remedial_completed (bool)
+    - remedial_score (float | None)
+    """
+    __tablename__ = "student_diagnostics"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    course_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    evaluated_by: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("users.id"), nullable=False)
+
+    # Standardized Classroom Bulk & Individual Parameters
+    roll_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    mid1_marks: Mapped[float] = mapped_column(Float, default=15.0)
+    mid2_marks: Mapped[float] = mapped_column(Float, default=15.0)
+    internal_quiz_score: Mapped[float] = mapped_column(Float, default=5.0)
+    assignment_score: Mapped[float] = mapped_column(Float, default=5.0)
+    attendance_percentage: Mapped[float] = mapped_column(Float, default=80.0)
+    lab_score: Mapped[float] = mapped_column(Float, default=10.0)
+    participation_index: Mapped[float] = mapped_column(Float, default=3.0)
+    aggregate_percentage: Mapped[float] = mapped_column(Float, default=50.0)
+    risk_score: Mapped[float] = mapped_column(Float, default=0.5)
+    category: Mapped[str] = mapped_column(String(40), default="Moderate Learner")  # Slow Learner | Moderate Learner | Advanced Learner
+
+    marks: Mapped[float] = mapped_column(Float, nullable=False)
+    class_performance: Mapped[float] = mapped_column(Float, nullable=False)
+    cgpa: Mapped[float] = mapped_column(Float, nullable=False)
+    urban_rural: Mapped[str] = mapped_column(String(20), nullable=False)
+    analytical_thinking: Mapped[float] = mapped_column(Float, nullable=False)
+    knowledge_level: Mapped[float] = mapped_column(Float, nullable=False)
+    problem_solving_skills: Mapped[float] = mapped_column(Float, nullable=False)
+    decision_making: Mapped[float] = mapped_column(Float, nullable=False)
+    errors: Mapped[float] = mapped_column(Float, nullable=False)
+
+    tier: Mapped[str] = mapped_column(String(30), nullable=False)  # Developing | Proficient | Advanced
+    learner_score: Mapped[float] = mapped_column(Float, nullable=False)
+    is_slow_learner: Mapped[bool] = mapped_column(Boolean, default=False)
+    confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    model_votes: Mapped[str] = mapped_column(Text, default="{}")  # JSON string
+    weak_dimensions: Mapped[str] = mapped_column(Text, default="[]")  # JSON string
+    radar_data: Mapped[str] = mapped_column(Text, default="{}")  # JSON string
+
+    remedial_quiz_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("quiz_sets.id", ondelete="SET NULL"), nullable=True)
+    remedial_assigned: Mapped[bool] = mapped_column(Boolean, default=False)
+    remedial_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    remedial_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+

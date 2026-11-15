@@ -25,6 +25,30 @@ async def lifespan(app: FastAPI):
     logger.info("startup", app_name=settings.APP_NAME, env=settings.ENVIRONMENT)
     if settings.ENVIRONMENT in ("development", "testing"):
         await create_tables()
+        try:
+            from sqlalchemy import select
+            from app.core.database import AsyncSessionLocal
+            from app.models.course import Course
+            from app.models.user import User
+            from app.services.diagnostic_service import get_course_diagnostic_summary
+
+            async with AsyncSessionLocal() as db:
+                fac = (await db.execute(select(User).where(User.email == "prof.sharma@edcap.demo").limit(1))).scalar_one_or_none()
+                courses = (await db.execute(select(Course).where(Course.is_active == True))).scalars().all()
+                if fac and courses:
+                    for c in courses:
+                        summary = await get_course_diagnostic_summary(db, course_id=c.id, faculty_id=fac.id)
+                        logger.info(
+                            "diagnostic_ecosystem_ready",
+                            course_code=c.code,
+                            total_evaluated=summary["total_evaluated"],
+                            developing=summary["tier_distribution"]["developing"]["count"],
+                            proficient=summary["tier_distribution"]["proficient"]["count"],
+                            advanced=summary["tier_distribution"]["advanced"]["count"],
+                        )
+                    await db.commit()
+        except Exception as exc:
+            logger.error("startup_diagnostic_sync_error", error=str(exc))
     yield
     logger.info("shutdown", app_name=settings.APP_NAME)
 
@@ -32,7 +56,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version="1.0.0",
-    description="EdCap — Early-Support & Teacher Capacity Platform (SIH1432)",
+    description="EdCap — Role-Based Student Performance Analytics & Remedial Testing Platform",
     docs_url=None if settings.is_production else "/docs",
     redoc_url=None if settings.is_production else "/redoc",
     openapi_url=None if settings.is_production else "/openapi.json",
@@ -104,3 +128,72 @@ app.include_router(playbooks.router, prefix=API_PREFIX)
 app.include_router(remedial.router, prefix=API_PREFIX)
 app.include_router(analytics.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
+
+# ── Direct /api/* Role-Separated Alias Routes ─────────────────────────────────
+app.include_router(auth.router, prefix="/api")
+app.include_router(students.router, prefix="/api")
+
+from fastapi import Depends  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+from app.api.deps import CurrentUser, RequireFaculty, RequireStudent  # noqa: E402
+from app.core.database import get_db  # noqa: E402
+
+
+@app.post("/api/faculty/student-metrics", dependencies=[RequireFaculty], tags=["faculty"])
+async def api_faculty_student_metrics(
+    payload: assessments.DiagnosticEvaluatePayload,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    return await assessments.evaluate_diagnostic_parameters(payload=payload, current_user=current_user, db=db)
+
+
+@app.get("/api/faculty/analytics", dependencies=[RequireFaculty], tags=["faculty"])
+async def api_faculty_analytics(
+    course_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    return await assessments.get_diagnostic_summary(course_id=course_id, current_user=current_user, db=db)
+
+
+@app.post("/api/faculty/generate-quiz", dependencies=[RequireFaculty], tags=["faculty"])
+async def api_faculty_generate_quiz(
+    payload: assessments.GenerateTopicQuizPayload,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    return await assessments.generate_targeted_remedial_quiz(payload=payload, current_user=current_user, db=db)
+
+
+@app.get("/api/student/assigned-quizzes", dependencies=[RequireStudent], tags=["student"])
+async def api_student_assigned_quizzes(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    return await quizzes.get_assigned_remedial_quiz(current_user=current_user, db=db)
+
+
+class DirectStudentQuizSubmit(assessments.BaseModel):
+    quiz_set_id: uuid.UUID
+    answers: list[attempts.SubmitAnswerRequest] = []
+
+
+@app.post("/api/student/submit-quiz", dependencies=[RequireStudent], tags=["student"])
+async def api_student_submit_quiz(
+    body: DirectStudentQuizSubmit,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    started = await attempts.start_attempt(
+        body=attempts.StartAttemptRequest(quiz_set_id=body.quiz_set_id),
+        current_user=current_user,
+        db=db,
+    )
+    attempt_id = uuid.UUID(started["id"])
+    return await attempts.finish_attempt(
+        attempt_id=attempt_id,
+        current_user=current_user,
+        body=attempts.FinishAttemptRequest(answers=body.answers, action="complete"),
+        db=db,
+    )

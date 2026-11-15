@@ -67,6 +67,27 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def create_tables() -> None:
-    """Create all tables (used in dev/test; production uses Alembic)."""
+    """Create all tables and auto-migrate new columns on existing dev SQLite tables."""
+    from sqlalchemy import text
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Ensure new classroom assessment columns exist on student_diagnostics
+        alter_statements = [
+            "ALTER TABLE student_diagnostics ADD COLUMN roll_number VARCHAR(50)",
+            "ALTER TABLE student_diagnostics ADD COLUMN mid1_marks FLOAT DEFAULT 15.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN mid2_marks FLOAT DEFAULT 15.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN internal_quiz_score FLOAT DEFAULT 5.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN assignment_score FLOAT DEFAULT 5.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN attendance_percentage FLOAT DEFAULT 80.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN lab_score FLOAT DEFAULT 10.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN participation_index FLOAT DEFAULT 3.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN aggregate_percentage FLOAT DEFAULT 50.0",
+            "ALTER TABLE student_diagnostics ADD COLUMN risk_score FLOAT DEFAULT 0.5",
+            "ALTER TABLE student_diagnostics ADD COLUMN category VARCHAR(40) DEFAULT 'Moderate Learner'",
+        ]
+        for stmt in alter_statements:
+            try:
+                await conn.execute(text(stmt))
+            except Exception:
+                pass

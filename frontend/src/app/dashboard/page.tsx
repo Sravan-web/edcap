@@ -9,13 +9,20 @@ import AppShell from '@/components/AppShell';
 import Topbar from '@/components/Topbar';
 import StatCard from '@/components/exam/StatCard';
 import Icon, { IconTile, type IconName } from '@/components/ui/Icon';
+import SlowLearnerDiagnosticPanel from '@/components/diagnostics/SlowLearnerDiagnosticPanel';
 import {
   analyticsApi,
   flagsApi,
   coursesApi,
+  quizzesApi,
+  remedialApi,
+  studentsApi,
   type CourseAnalytics,
   type SupportFlag,
   type Course,
+  type AssignedRemedialResponse,
+  type DiagnosticSummaryResponse,
+  type RemedialItem,
 } from '@/lib/api';
 
 /* ── Shared Helpers ────────────────────────────────────────── */
@@ -168,9 +175,9 @@ const EXAM_DIRECTORY = [
   {
     code: 'CS101',
     title: 'Data Structures & Algorithms',
-    examTitle: 'Mid-Term Competency Diagnostic #4',
-    questions: 10,
-    duration: '20 Mins',
+    examTitle: 'Targeted Remedial & Competency Diagnostic',
+    questions: 20,
+    duration: '30 Mins',
     syllabusPct: 78,
     deadline: 'Due Today, 11:59 PM',
     status: 'Live Now',
@@ -178,9 +185,9 @@ const EXAM_DIRECTORY = [
   {
     code: 'CS204',
     title: 'Operating Systems & Concurrency',
-    examTitle: 'Memory Management & Paging Test',
-    questions: 10,
-    duration: '20 Mins',
+    examTitle: 'Memory Management & Pointers Evaluation',
+    questions: 20,
+    duration: '30 Mins',
     syllabusPct: 64,
     deadline: 'Tomorrow, 5:00 PM',
     status: 'Open',
@@ -189,8 +196,8 @@ const EXAM_DIRECTORY = [
     code: 'CS302',
     title: 'Database Management Systems',
     examTitle: 'Indexing, B-Trees & ACID Transactions',
-    questions: 10,
-    duration: '20 Mins',
+    questions: 20,
+    duration: '30 Mins',
     syllabusPct: 85,
     deadline: 'Fri, 6:00 PM',
     status: 'Scheduled',
@@ -206,6 +213,31 @@ const MASTERY_METRICS = [
   { label: 'Hashing',   pct: 88 },
 ];
 
+function tierBadgeStyle(tier?: string) {
+  if (tier === 'Developing') {
+    return {
+      bg: 'rgba(244, 63, 94, 0.14)',
+      color: 'var(--danger)',
+      border: '1px solid rgba(244, 63, 94, 0.35)',
+      sublabel: 'Low / Slow — Remedial Active',
+    };
+  }
+  if (tier === 'Advanced') {
+    return {
+      bg: 'rgba(16, 185, 129, 0.14)',
+      color: 'var(--success)',
+      border: '1px solid rgba(16, 185, 129, 0.35)',
+      sublabel: 'Fast — High Mastery',
+    };
+  }
+  return {
+    bg: 'rgba(99, 102, 241, 0.14)',
+    color: 'var(--tint-indigo-fg)',
+    border: '1px solid rgba(99, 102, 241, 0.35)',
+    sublabel: 'Average — Steady Progress',
+  };
+}
+
 /* ── Student EduTech Dashboard ─────────────────────────────── */
 function StudentDashboard() {
   const { user } = useAuth();
@@ -215,15 +247,17 @@ function StudentDashboard() {
     open_support_flags: number;
     enrolled_courses: string[];
   } | null>(null);
+  const [remedialInfo, setRemedialInfo] = useState<AssignedRemedialResponse | null>(null);
+  const [queueItems, setQueueItems] = useState<RemedialItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    import('@/lib/api')
-      .then(api => api.studentsApi.profile(user.id))
-      .then(setProfile)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    Promise.all([
+      studentsApi.profile(user.id).then(setProfile).catch(console.error),
+      quizzesApi.getAssignedRemedial().then(setRemedialInfo).catch(console.error),
+      remedialApi.list().then(setQueueItems).catch(console.error),
+    ]).finally(() => setLoading(false));
   }, [user]);
 
   if (loading) {
@@ -234,6 +268,16 @@ function StudentDashboard() {
     );
   }
 
+  const diag = remedialInfo?.diagnostic;
+  const tierMeta = tierBadgeStyle(diag?.tier);
+
+  const studentRadarMetrics = diag?.radar_data && Object.keys(diag.radar_data).length > 0
+    ? Object.entries(diag.radar_data).map(([label, pct]) => ({
+        label,
+        pct: Math.round(Number(pct)),
+      }))
+    : MASTERY_METRICS;
+
   return (
     <>
       <Topbar current="Dashboard" breadcrumb="Student Portal" />
@@ -242,15 +286,28 @@ function StudentDashboard() {
         <div className="hero mb-6">
           <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
+              <div className="flex items-center gap-2" style={{ marginBottom: 10, flexWrap: 'wrap' }}>
                 <span className="badge badge-blue">EduTech Learning Hub</span>
                 <span className="badge badge-teal badge-dot">Semester IV Active</span>
+                {diag && (
+                  <span
+                    className="badge"
+                    style={{
+                      background: tierMeta.bg,
+                      color: tierMeta.color,
+                      border: tierMeta.border,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Tier: {diag.tier} ({tierMeta.sublabel})
+                  </span>
+                )}
               </div>
               <h1 className="page-title">
                 Welcome back, {user?.first_name}
               </h1>
               <p className="page-subtitle" style={{ marginTop: 6 }}>
-                Track your syllabus progression, complete timed assessments, and master flagged concepts.
+                Track your 9-parameter academic diagnostic profile, complete 20-question assessments, and master flagged concepts.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -262,48 +319,100 @@ function StudentDashboard() {
               )}
               <a href="/quiz" className="btn btn-primary">
                 <Icon name="exam" size={16} />
-                <span>Enter Exam Room</span>
+                <span>{remedialInfo?.has_remedial ? 'Start 20-Q Remedial Quiz' : 'Enter Exam Room'}</span>
                 <Icon name="arrowRight" size={15} />
               </a>
             </div>
           </div>
         </div>
 
+        {/* Assigned 20-Question Targeted Remedial Quiz Callout (for Developing Students) */}
+        {remedialInfo?.has_remedial && remedialInfo.quiz && (
+          <div
+            className="card card-padding mb-6"
+            style={{
+              border: '1.5px solid rgba(244, 63, 94, 0.45)',
+              background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, rgba(99, 102, 241, 0.06) 100%)',
+            }}
+          >
+            <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
+              <div style={{ flex: '1 1 480px' }}>
+                <div className="flex items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
+                  <span className="badge badge-red badge-dot">Assigned Remedial Intervention</span>
+                  <span className="badge badge-purple">Tier: Developing (Low / Slow)</span>
+                  <span className="badge badge-blue">{remedialInfo.quiz.questions.length} Questions · 25 Mins</span>
+                  {remedialInfo.is_completed && (
+                    <span className="badge badge-green">
+                      Completed · Last Score: {remedialInfo.score_pct?.toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>
+                  {remedialInfo.quiz.title}
+                </h2>
+                <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginBottom: 10 }}>
+                  Based on faculty diagnostic analysis of your 9 academic & cognitive parameters (Marks: <strong>{diag?.marks}%</strong>, CGPA: <strong>{diag?.cgpa}</strong>, Composite Score: <strong>{diag?.learner_score}/100</strong>), this 20-question remedial assessment targets your weak concept areas:
+                </p>
+                {diag?.weak_dimensions && diag.weak_dimensions.length > 0 && (
+                  <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                    {diag.weak_dimensions.map((dim, i) => (
+                      <span key={i} className="badge badge-orange">
+                        {dim}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 220 }}>
+                <a href="/quiz" className="btn btn-primary">
+                  <Icon name="zap" size={16} />
+                  <span>{remedialInfo.is_completed ? 'Retake 20-Q Remedial Quiz' : 'Start 20-Q Remedial Quiz'}</span>
+                  <Icon name="arrowRight" size={15} />
+                </a>
+                <a href="/remedial" className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}>
+                  <Icon name="repeat" size={14} />
+                  <span>View Spaced-Repetition Study Plan</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 1. Overview Metrics (<StatCard />) */}
         <div className="grid-4 mb-6">
           <StatCard
-            label="Tests Completed"
-            value="14"
-            subtext="100% on-time submission"
-            trend="+2 this week"
-            trendPositive
-            icon="assessments"
-            accentColor="indigo"
+            label="Diagnostic Tier"
+            value={diag?.tier ?? 'Proficient'}
+            subtext={diag ? `Composite Score: ${diag.learner_score}/100` : 'Multi-model ML classification'}
+            trend={tierMeta.sublabel}
+            trendPositive={diag?.tier !== 'Developing'}
+            icon="sparkles"
+            accentColor={diag?.tier === 'Developing' ? 'rose' : diag?.tier === 'Advanced' ? 'emerald' : 'indigo'}
           />
           <StatCard
-            label="Score Percentile / GPA"
-            value="8.6 GPA"
-            subtext="Top 18% of cohort (76.4%)"
-            trend="+4.2%"
-            trendPositive
+            label="Marks & Academic CGPA"
+            value={diag ? `${diag.marks}% / ${diag.cgpa}` : '76.4% / 8.2'}
+            subtext="Internal test marks & CGPA"
+            trend={remedialInfo?.score_pct != null ? `Remedial: ${remedialInfo.score_pct.toFixed(0)}%` : 'Synced with faculty'}
+            trendPositive={(diag?.marks ?? 75) >= 55}
             icon="award"
             accentColor="emerald"
           />
           <StatCard
-            label="Study Hours & Streak"
-            value={`${profile?.current_streak ?? 5}d / 28.5h`}
-            subtext={`${profile?.retention_points ?? 340} mastery points earned`}
-            trend="Consistent"
+            label="Study Streak & Points"
+            value={`${profile?.current_streak ?? 3} Days`}
+            subtext={`${profile?.retention_points ?? 180} mastery points earned`}
+            trend="Active habit"
             trendPositive
             icon="clock"
             accentColor="blue"
           />
           <StatCard
-            label="Upcoming Deadlines"
-            value="2 Tests"
-            subtext={`${profile?.open_support_flags ?? 0} remedial topics queued`}
-            trend="Due Today"
-            trendPositive={false}
+            label="Remedial & Support Queue"
+            value={remedialInfo?.has_remedial ? '20-Q Quiz Active' : `${queueItems.length} Topics`}
+            subtext={`${profile?.open_support_flags ?? 0} open support flags`}
+            trend={remedialInfo?.has_remedial && !remedialInfo?.is_completed ? 'Action Required' : 'On Schedule'}
+            trendPositive={!remedialInfo?.has_remedial || Boolean(remedialInfo?.is_completed)}
             icon="calendar"
             accentColor="rose"
           />
@@ -315,10 +424,10 @@ function StudentDashboard() {
             <div>
               <h2 className="section-title">
                 <Icon name="courses" size={18} style={{ color: 'var(--tint-indigo-fg)' }} />
-                <span>Active Course & Online Exam Directory</span>
+                <span>Active Course & Online Exam Directory (20 Questions)</span>
               </h2>
               <p className="section-subtitle">
-                Syllabus completion progress and scheduled proctored assessments
+                Syllabus completion progress and scheduled 20-question assessments
               </p>
             </div>
             <a href="/quiz" className="btn btn-secondary btn-sm">
@@ -402,7 +511,7 @@ function StudentDashboard() {
 
                 <div className="flex items-center gap-2">
                   <a href={`/quiz?exam=${course.code}`} className="btn btn-primary btn-sm btn-full">
-                    <span>Enter Exam Room</span>
+                    <span>Enter Exam Room (20 Qs)</span>
                     <Icon name="arrowRight" size={14} />
                   </a>
                   <a href="/remedial" className="btn btn-secondary btn-sm">
@@ -421,16 +530,18 @@ function StudentDashboard() {
               <div>
                 <h2 className="section-title">
                   <Icon name="radar" size={18} style={{ color: 'var(--tint-indigo-fg)' }} />
-                  <span>Subject Mastery Radar</span>
+                  <span>Cognitive & Subject Mastery Radar</span>
                 </h2>
-                <p className="section-subtitle">Topic-level accuracy across recent assessments</p>
+                <p className="section-subtitle">
+                  {diag ? 'Your 6-axis cognitive & academic profile from faculty evaluation' : 'Topic-level accuracy across recent assessments'}
+                </p>
               </div>
               <a href="/progress" className="btn btn-secondary btn-sm">
                 <span>Full History</span>
                 <Icon name="arrowRight" size={14} />
               </a>
             </div>
-            <SubjectMasteryRadar metrics={MASTERY_METRICS} />
+            <SubjectMasteryRadar metrics={studentRadarMetrics} />
           </div>
 
           <div className="card card-padding">
@@ -440,7 +551,7 @@ function StudentDashboard() {
                   <Icon name="repeat" size={18} style={{ color: 'var(--tint-emerald-fg)' }} />
                   <span>Adaptive Remedial Study Queue</span>
                 </h2>
-                <p className="section-subtitle">Personalized interventions based on exam diagnostics</p>
+                <p className="section-subtitle">Personalized interventions based on 9-parameter exam diagnostics</p>
               </div>
               <a href="/remedial" className="btn btn-secondary btn-sm">
                 <span>Open Queue</span>
@@ -449,29 +560,42 @@ function StudentDashboard() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                {
-                  topic: 'Recursion & Call Stack Frames',
-                  course: 'CS101',
-                  accuracy: '62%',
-                  action: 'Review Step-by-Step Guide + 5 Practice Questions',
-                  badge: 'badge-orange',
-                },
-                {
-                  topic: 'Pointer Arithmetic & Memory Offsets',
-                  course: 'CS101',
-                  accuracy: '68%',
-                  action: 'Complete Spaced-Repetition Review (Interval: 3d)',
-                  badge: 'badge-blue',
-                },
-                {
-                  topic: 'Balanced Binary Search Trees (AVL)',
-                  course: 'CS204',
-                  accuracy: '74%',
-                  action: 'Ready for Timed Mastery Verification Quiz',
-                  badge: 'badge-green',
-                },
-              ].map((item, idx) => (
+              {(queueItems.length > 0
+                ? queueItems.map(q => ({
+                    topic: q.topic_name || 'Core Programming Concept Review',
+                    course: q.course_code || 'CS101',
+                    accuracy: q.last_result === 'pass' ? 'Mastered' : `${diag?.marks ?? 52}%`,
+                    action: `Spaced-Repetition Interval: ${q.interval_days}d · Reviews: ${q.repetition_count}`,
+                    badge: q.last_result === 'pass' ? 'badge-green' : 'badge-orange',
+                    href: '/remedial',
+                  }))
+                : [
+                    {
+                      topic: 'Error Debugging & Loop Boundary Conditions',
+                      course: 'CS101',
+                      accuracy: `${diag?.marks ?? 62}%`,
+                      action: 'Targeted 20-Question Remedial Quiz + Worked Examples',
+                      badge: 'badge-orange',
+                      href: '/quiz',
+                    },
+                    {
+                      topic: 'Pointers, Memory Allocation & Scope',
+                      course: 'CS101',
+                      accuracy: '68%',
+                      action: 'Complete Spaced-Repetition Review (Interval: 3d)',
+                      badge: 'badge-blue',
+                      href: '/remedial',
+                    },
+                    {
+                      topic: 'Problem Solving & Algorithmic Logic',
+                      course: 'CS101',
+                      accuracy: '74%',
+                      action: 'Ready for Timed Mastery Verification Quiz (20 Qs)',
+                      badge: 'badge-green',
+                      href: '/quiz',
+                    },
+                  ]
+              ).map((item, idx) => (
                 <div
                   key={idx}
                   className="subcard flex items-center justify-between gap-3"
@@ -484,10 +608,10 @@ function StudentDashboard() {
                       </span>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {item.action} · Accuracy: <strong>{item.accuracy}</strong>
+                      {item.action} · Status: <strong>{item.accuracy}</strong>
                     </div>
                   </div>
-                  <a href="/remedial" className="btn btn-secondary btn-sm">
+                  <a href={item.href} className="btn btn-secondary btn-sm">
                     <span>Practice</span>
                     <Icon name="arrowRight" size={13} />
                   </a>
@@ -506,14 +630,34 @@ function FacultyDashboard() {
   const [analytics, setAnalytics] = useState<CourseAnalytics[]>([]);
   const [flags, setFlags] = useState<SupportFlag[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [activeCourseId, setActiveCourseId] = useState<string>('');
+  const [diagSummary, setDiagSummary] = useState<DiagnosticSummaryResponse | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const refreshEcosystemData = () => {
+    Promise.all([
+      analyticsApi.class().then(r => setAnalytics(r.courses)),
+      flagsApi.list({ status: 'open' }).then(setFlags),
+    ]).catch(console.error);
+  };
 
   useEffect(() => {
     Promise.all([
       analyticsApi.class().then(r => setAnalytics(r.courses)),
       flagsApi.list({ status: 'open' }).then(setFlags),
-      coursesApi.list().then(setCourses),
+      coursesApi.list().then(list => {
+        setCourses(list);
+        if (list.length > 0) {
+          setActiveCourseId(list[0].id);
+        }
+      }),
     ])
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -527,45 +671,64 @@ function FacultyDashboard() {
     );
   }
 
-  const totalStudents = analytics.reduce((s, c) => s + c.student_count, 0);
-  const totalFlags = analytics.reduce((s, c) => s + c.open_support_flags, 0);
-  const avgScore = analytics.length
-    ? analytics.filter(c => c.last_assessment_avg_pct !== null)
-        .reduce((s, c) => s + (c.last_assessment_avg_pct ?? 0), 0) /
-      Math.max(analytics.filter(c => c.last_assessment_avg_pct !== null).length, 1)
-    : null;
+  const totalStudents = diagSummary?.total_evaluated || analytics.reduce((s, c) => s + c.student_count, 0);
+  const developingCount = diagSummary?.tier_distribution.developing.count ?? flags.length;
+  const proficientCount = diagSummary?.tier_distribution.proficient.count ?? 0;
+  const advancedCount = diagSummary?.tier_distribution.advanced.count ?? 0;
+  const avgScore = diagSummary?.averages.marks ?? (
+    analytics.length
+      ? analytics.filter(c => c.last_assessment_avg_pct !== null)
+          .reduce((s, c) => s + (c.last_assessment_avg_pct ?? 0), 0) /
+        Math.max(analytics.filter(c => c.last_assessment_avg_pct !== null).length, 1)
+      : null
+  );
+
+  const cohortRadarMetrics = diagSummary?.radar_averages
+    ? Object.entries(diagSummary.radar_averages).map(([label, pct]) => ({
+        label,
+        pct: Math.round(Number(pct)),
+      }))
+    : MASTERY_METRICS;
 
   return (
     <>
       <Topbar current="Dashboard" breadcrumb="Faculty Portal" />
       <div className="app-content">
+        {toast && (
+          <div className="toast" role="status" aria-live="polite">
+            <Icon name="checkCircle" size={16} />
+            <span>{toast}</span>
+          </div>
+        )}
+
         {/* Hero Welcome Banner */}
         <div className="hero mb-6">
           <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
+              <div className="flex items-center gap-2" style={{ marginBottom: 10, flexWrap: 'wrap' }}>
                 <span className="badge badge-blue">Faculty Command Center</span>
-                <span className="badge badge-teal badge-dot">Live Exam & Intervention Suite</span>
+                <span className="badge badge-teal badge-dot">Student Performance &amp; Remedial Analytics</span>
+                <span className="badge badge-purple">Tiers: Developing · Proficient · Advanced</span>
               </div>
               <h1 className="page-title">
                 Good {getTimeOfDay()}, Prof. {user?.last_name}
               </h1>
               <p className="page-subtitle" style={{ marginTop: 6 }}>
-                Monitor cohort mastery, launch proctored online examinations, and review early-warning remedial flags.
+                Evaluate student academic & cognitive parameters (Marks, Class Performance, CGPA, Urban/Rural, Analytical Thinking, Knowledge, Problem Solving, Decision Making, Errors), inspect ML graphs, and assign 20-question remedial quizzes to Developing learners.
               </p>
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <a href="/quiz" className="btn btn-secondary btn-sm">
-                <Icon name="exam" size={15} />
-                <span>Exam Room</span>
-              </a>
               <a href="/assessments" className="btn btn-secondary btn-sm">
                 <Icon name="assessments" size={15} />
-                <span>Record Scores</span>
+                <span>Assessments & Diagnostics</span>
+              </a>
+              <a href="/playbooks" className="btn btn-secondary btn-sm">
+                <Icon name="playbook" size={15} />
+                <span>Intervention Playbooks</span>
               </a>
               <a href="/flags" className="btn btn-primary btn-sm">
                 <Icon name="flag" size={15} />
-                <span>Review Flags ({totalFlags})</span>
+                <span>Support Flags ({flags.length})</span>
               </a>
             </div>
           </div>
@@ -574,53 +737,174 @@ function FacultyDashboard() {
         {/* 1. Overview Metrics (<StatCard />) */}
         <div className="grid-4 mb-6">
           <StatCard
-            label="Enrolled Students"
+            label="Evaluated Cohort"
             value={totalStudents}
-            subtext={`Across ${courses.length} active courses`}
-            trend="100% synced"
+            subtext={`Developing: ${developingCount} · Proficient: ${proficientCount} · Advanced: ${advancedCount}`}
+            trend="9-Parameter ML Synced"
             trendPositive
             icon="users"
             accentColor="indigo"
           />
           <StatCard
-            label="Class Score Average"
-            value={avgScore !== null ? `${avgScore.toFixed(1)}%` : '71.4%'}
-            subtext="Latest assessment cohort mean"
-            trend="+3.1% vs last test"
+            label="Class Marks & CGPA Mean"
+            value={avgScore !== null ? `${avgScore.toFixed(1)}%` : '68.4%'}
+            subtext={diagSummary ? `Mean Cohort CGPA: ${diagSummary.averages.cgpa}` : 'Latest assessment cohort mean'}
+            trend="Live Telemetry"
             trendPositive
             icon="analytics"
             accentColor="emerald"
           />
           <StatCard
-            label="Students Needing Support"
-            value={totalFlags}
-            subtext="Identified by diagnostic engine"
-            trend={totalFlags > 0 ? 'Action Required' : 'All Clear'}
-            trendPositive={totalFlags === 0}
+            label="Developing (Slow Learners)"
+            value={developingCount}
+            subtext="Auto-assigned 20-Q Remedial Quiz"
+            trend={developingCount > 0 ? `${developingCount} Active Interventions` : 'All Clear'}
+            trendPositive={developingCount === 0}
             icon="flag"
             accentColor="rose"
           />
           <StatCard
-            label="Active Online Exams"
-            value={`${EXAM_DIRECTORY.length} Live`}
-            subtext="Proctored timed assessments"
-            trend="20m Timed"
+            label="Remedial & Live Exams"
+            value="20 Qs · Live"
+            subtext="Targeted Remedial & Daily Exam Sets"
+            trend="30m Timed"
             trendPositive
             icon="exam"
             accentColor="blue"
           />
         </div>
 
-        {/* 2. Course & Online Exam Directory */}
-        <div className="card card-padding mb-6">
+        {/* 2. PRIMARY ORCHESTRATION PANEL: Slow Learner Diagnostic, 9-Parameter Entry, Graphs & 20-Q Remedial Quiz Assignment */}
+        {activeCourseId && (
+          <div className="mb-6">
+            <SlowLearnerDiagnosticPanel
+              courses={courses}
+              activeCourseId={activeCourseId}
+              onCourseChange={cid => setActiveCourseId(cid)}
+              showToast={showToast}
+              onSummaryLoaded={summary => {
+                setDiagSummary(summary);
+                refreshEcosystemData();
+              }}
+            />
+          </div>
+        )}
+
+        {/* 3. Open Support Flags & Cohort Cognitive Radar */}
+        <div className="grid-2 mb-6">
+          <div className="card">
+            <div className="card-padding" style={{ paddingBottom: 0 }}>
+              <div className="section-header">
+                <div>
+                  <div className="section-title">
+                    <Icon name="flag" size={17} style={{ color: 'var(--tint-rose-fg)' }} />
+                    <span>Open Support Flags (Developing Learners)</span>
+                  </div>
+                  <div className="section-subtitle">Auto-generated from 9-parameter ML diagnostic & linked to Playbooks</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a href="/playbooks" className="btn btn-secondary btn-sm">
+                    <span>Playbooks</span>
+                  </a>
+                  <a href="/flags" className="btn btn-secondary btn-sm">
+                    <span>Manage Flags</span>
+                    <Icon name="arrowRight" size={14} />
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
+              {flags.length === 0 ? (
+                <div className="empty-state">
+                  <IconTile name="checkCircle" tone="emerald" size={44} />
+                  <div className="empty-state-text">No open flags — all students are on track.</div>
+                </div>
+              ) : (
+                <table>
+                  <caption className="sr-only">Open support flags requiring immediate attention</caption>
+                  <thead>
+                    <tr>
+                      <th>Support Area</th>
+                      <th>Attention Level</th>
+                      <th>Weak Dimensions</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flags.slice(0, 6).map(flag => {
+                      const normScore = flag.risk_score > 1 ? flag.risk_score / 100 : flag.risk_score;
+                      return (
+                        <tr key={flag.id}>
+                          <td>
+                            <span className={trackColor(flag.track)}>
+                              {trackLabel(flag.track)}
+                            </span>
+                          </td>
+                          <td>
+                            <div
+                              className="risk-bar"
+                              role="progressbar"
+                              aria-valuenow={Math.round(normScore * 100)}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-label={`Support priority: ${Math.round(normScore * 100)}%`}
+                            >
+                              <div className="risk-bar-track" style={{ minWidth: 64 }}>
+                                <div
+                                  className="risk-bar-fill"
+                                  style={{
+                                    width: `${Math.min(100, Math.round(normScore * 100))}%`,
+                                    background: riskColor(normScore),
+                                  }}
+                                />
+                              </div>
+                              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: riskColor(normScore) }}>
+                                {Math.round(normScore * 100)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="truncate" style={{ maxWidth: 220, fontSize: 13 }}>
+                            {Array.isArray(flag.reasons) ? (flag.reasons.join(', ') || '—') : '—'}
+                          </td>
+                          <td style={{ fontSize: 12 }}>{new Date(flag.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+
+          {/* Cohort Subject Mastery Radar */}
+          <div className="card card-padding">
+            <div className="section-header">
+              <div>
+                <div className="section-title">
+                  <Icon name="radar" size={18} style={{ color: 'var(--tint-indigo-fg)' }} />
+                  <span>Cohort 6-Axis Competency Radar</span>
+                </div>
+                <div className="section-subtitle">Class-wide averages across 6 core academic &amp; conceptual dimensions</div>
+              </div>
+              <a href="/analytics" className="btn btn-secondary btn-sm">
+                <span>Deep Dive</span>
+                <Icon name="arrowRight" size={14} />
+              </a>
+            </div>
+            <SubjectMasteryRadar metrics={cohortRadarMetrics} />
+          </div>
+        </div>
+
+        {/* 4. Course & Remedial Assessment Management Directory */}
+        <div className="card card-padding">
           <div className="section-header">
             <div>
               <h2 className="section-title">
                 <Icon name="courses" size={18} style={{ color: 'var(--tint-indigo-fg)' }} />
-                <span>Course & Online Examination Directory</span>
+                <span>Course &amp; Remedial Assessment Directory</span>
               </h2>
               <p className="section-subtitle">
-                Manage syllabus modules, inspect live exams, or enter the examination room
+                Manage syllabus modules, configure 20-question targeted remedial quizzes, and inspect course analytics
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -628,9 +912,9 @@ function FacultyDashboard() {
                 <Icon name="modules" size={14} />
                 <span>Lecture Modules</span>
               </a>
-              <a href="/quiz" className="btn btn-primary btn-sm">
-                <span>Launch Exam Room</span>
-                <Icon name="arrowRight" size={14} />
+              <a href="/assessments" className="btn btn-primary btn-sm">
+                <Icon name="sparkles" size={14} />
+                <span>Generate Remedial Quiz</span>
               </a>
             </div>
           </div>
@@ -657,7 +941,7 @@ function FacultyDashboard() {
                     {item.title}
                   </h3>
                   <p className="flex items-center gap-2" style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
-                    <Icon name="exam" size={14} style={{ color: 'var(--tint-indigo-fg)' }} />
+                    <Icon name="assessments" size={14} style={{ color: 'var(--tint-indigo-fg)' }} />
                     <span>{item.examTitle}</span>
                   </p>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
@@ -678,8 +962,8 @@ function FacultyDashboard() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <a href={`/quiz?exam=${item.code}`} className="btn btn-primary btn-sm btn-full">
-                    <span>Enter Exam Room</span>
+                  <a href="/assessments" className="btn btn-primary btn-sm btn-full">
+                    <span>Configure &amp; Assign Quiz</span>
                     <Icon name="arrowRight" size={14} />
                   </a>
                   <a href="/analytics" className="btn btn-secondary btn-sm">
@@ -690,103 +974,6 @@ function FacultyDashboard() {
             ))}
           </div>
         </div>
-
-        {/* 3. Open Support Flags & Subject Mastery Radar */}
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-padding" style={{ paddingBottom: 0 }}>
-              <div className="section-header">
-                <div>
-                  <div className="section-title">
-                    <Icon name="flag" size={17} style={{ color: 'var(--tint-rose-fg)' }} />
-                    <span>Open Support Flags</span>
-                  </div>
-                  <div className="section-subtitle">Learners identified for remedial coaching</div>
-                </div>
-                <a href="/flags" className="btn btn-secondary btn-sm">
-                  <span>View all</span>
-                  <Icon name="arrowRight" size={14} />
-                </a>
-              </div>
-            </div>
-            <div className="table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
-              {flags.length === 0 ? (
-                <div className="empty-state">
-                  <IconTile name="checkCircle" tone="emerald" size={44} />
-                  <div className="empty-state-text">No open flags — all students are on track.</div>
-                </div>
-              ) : (
-                <table>
-                  <caption className="sr-only">Open support flags requiring immediate attention</caption>
-                  <thead>
-                    <tr>
-                      <th>Support Area</th>
-                      <th>Attention Level</th>
-                      <th>Primary Observation</th>
-                      <th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flags.slice(0, 6).map(flag => (
-                      <tr key={flag.id}>
-                        <td>
-                          <span className={trackColor(flag.track)}>
-                            {trackLabel(flag.track)}
-                          </span>
-                        </td>
-                        <td>
-                          <div
-                            className="risk-bar"
-                            role="progressbar"
-                            aria-valuenow={Math.round(flag.risk_score * 100)}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-label={`Support priority: ${Math.round(flag.risk_score * 100)}%`}
-                          >
-                            <div className="risk-bar-track" style={{ minWidth: 64 }}>
-                              <div
-                                className="risk-bar-fill"
-                                style={{
-                                  width: `${(flag.risk_score * 100).toFixed(0)}%`,
-                                  background: riskColor(flag.risk_score),
-                                }}
-                              />
-                            </div>
-                            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: riskColor(flag.risk_score) }}>
-                              {(flag.risk_score * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="truncate" style={{ maxWidth: 180, fontSize: 13 }}>
-                          {Array.isArray(flag.reasons) ? (flag.reasons[0] ?? '—') : '—'}
-                        </td>
-                        <td style={{ fontSize: 12 }}>{new Date(flag.created_at).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-
-          {/* Cohort Subject Mastery Radar */}
-          <div className="card card-padding">
-            <div className="section-header">
-              <div>
-                <div className="section-title">
-                  <Icon name="radar" size={18} style={{ color: 'var(--tint-indigo-fg)' }} />
-                  <span>Cohort Subject Mastery Radar</span>
-                </div>
-                <div className="section-subtitle">Class-wide competency across core syllabus domains</div>
-              </div>
-              <a href="/analytics" className="btn btn-secondary btn-sm">
-                <span>Deep Dive</span>
-                <Icon name="arrowRight" size={14} />
-              </a>
-            </div>
-            <SubjectMasteryRadar metrics={MASTERY_METRICS} />
-          </div>
-        </div>
       </div>
     </>
   );
@@ -795,37 +982,63 @@ function FacultyDashboard() {
 /* ── Admin Dashboard ───────────────────────────────────────── */
 function AdminDashboard() {
   const { user } = useAuth();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [activeCourseId, setActiveCourseId] = useState<string>('');
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  useEffect(() => {
+    coursesApi
+      .list()
+      .then(list => {
+        setCourses(list);
+        if (list.length > 0) setActiveCourseId(list[0].id);
+      })
+      .catch(console.error);
+  }, []);
+
   const cards: { icon: IconName; tone: 'indigo' | 'blue' | 'emerald' | 'rose' | 'amber' | 'violet'; label: string; href: string; desc: string }[] = [
-    { icon: 'users',     tone: 'indigo',  label: 'Manage Users',    href: '/admin',          desc: 'View all users, assign roles, and activate or suspend accounts' },
-    { icon: 'exam',      tone: 'blue',    label: 'Live Exam Room',  href: '/quiz',           desc: 'Launch the dual-pane online examination and testing workspace' },
-    { icon: 'shield',    tone: 'violet',  label: 'Audit Logs',      href: '/admin#audit',    desc: 'Tamper-evident security audit trail of all privileged actions' },
-    { icon: 'analytics', tone: 'emerald', label: 'Analytics',       href: '/analytics',      desc: 'Institution-wide course mastery and intervention analytics' },
-    { icon: 'flag',      tone: 'rose',    label: 'Support Flags',   href: '/flags',          desc: 'All active student support flags across departments' },
-    { icon: 'playbook',  tone: 'amber',   label: 'Playbooks',       href: '/playbooks',      desc: 'Faculty intervention playbooks and remedial strategies' },
+    { icon: 'users',       tone: 'indigo',  label: 'Manage Users',     href: '/admin',          desc: 'View all users, assign roles, and activate or suspend accounts' },
+    { icon: 'assessments', tone: 'blue',    label: 'Assessments Suite', href: '/assessments',   desc: 'Manage student metrics, diagnostic evaluations, and remedial quizzes' },
+    { icon: 'shield',      tone: 'violet',  label: 'Audit Logs',       href: '/admin#audit',    desc: 'Tamper-evident security audit trail of all privileged actions' },
+    { icon: 'analytics',   tone: 'emerald', label: 'Analytics',        href: '/analytics',      desc: 'Institution-wide course mastery and tier distribution analytics' },
+    { icon: 'flag',        tone: 'rose',    label: 'Support Flags',    href: '/flags',          desc: 'All active Developing learner support flags across departments' },
+    { icon: 'playbook',    tone: 'amber',   label: 'Playbooks',        href: '/playbooks',      desc: 'Faculty intervention playbooks and remedial strategies' },
   ];
 
   return (
     <>
       <Topbar current="Dashboard" breadcrumb="Admin Console" />
       <div className="app-content">
+        {toast && (
+          <div className="toast" role="status" aria-live="polite">
+            <Icon name="checkCircle" size={16} />
+            <span>{toast}</span>
+          </div>
+        )}
+
         <div className="hero mb-6">
           <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
             <div>
               <span className="badge badge-purple" style={{ marginBottom: 10 }}>System Administration</span>
-              <h1 className="page-title">EduTech & Exam Platform Console</h1>
+              <h1 className="page-title">EduTech &amp; Diagnostic Platform Console</h1>
               <p className="page-subtitle" style={{ marginTop: 6 }}>
-                Welcome, {user?.first_name}. Manage institutional accounts, audit trails, and live examination rooms.
+                Welcome, {user?.first_name}. Manage institutional accounts, inspect learner performance tiers, and oversee remedial testing.
               </p>
             </div>
-            <a href="/quiz" className="btn btn-primary">
-              <Icon name="exam" size={16} />
-              <span>Enter Exam Room</span>
+            <a href="/assessments" className="btn btn-primary">
+              <Icon name="assessments" size={16} />
+              <span>Assessments &amp; Diagnostics</span>
               <Icon name="arrowRight" size={15} />
             </a>
           </div>
         </div>
 
-        <div className="grid-3">
+        <div className="grid-3 mb-6">
           {cards.map(item => (
             <a key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
               <div className="card card-padding card-interactive" style={{ cursor: 'pointer', height: '100%' }}>
@@ -840,6 +1053,15 @@ function AdminDashboard() {
             </a>
           ))}
         </div>
+
+        {activeCourseId && (
+          <SlowLearnerDiagnosticPanel
+            courses={courses}
+            activeCourseId={activeCourseId}
+            onCourseChange={cid => setActiveCourseId(cid)}
+            showToast={showToast}
+          />
+        )}
       </div>
     </>
   );

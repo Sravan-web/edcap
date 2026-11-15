@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, RequireFaculty, MFAStepUpRequired
 from app.core.database import get_db
 from app.models.course import Course, CourseFaculty, Enrollment
-from app.models.quiz import QuizQuestion, QuizSet
+from app.models.quiz import QuizAttempt, QuizQuestion, QuizSet
 from app.models.user import UserRole
 from app.services import quiz_service
 
@@ -46,92 +46,97 @@ def _format_question(q: QuizQuestion, include_answer: bool = True) -> dict:
 
 
 async def _ensure_demo_live_quiz(db: AsyncSession, course_id: uuid.UUID, today: date, creator_id: uuid.UUID) -> QuizSet:
-    """Create a default live daily quiz for the course if none exists yet."""
+    """Create or ensure a default 20-question live quiz for the course."""
+    from app.services.diagnostic_service import ensure_remedial_quiz_set
     cf_res = await db.execute(select(CourseFaculty.faculty_id).where(CourseFaculty.course_id == course_id).limit(1))
     faculty_id = cf_res.scalar_one_or_none() or creator_id
-    qs = QuizSet(
-        course_id=course_id,
-        scheduled_date=today,
-        status="live",
-        created_by=faculty_id,
-        approved_by=faculty_id,
-        approved_at=datetime.now(timezone.utc).replace(tzinfo=None),
+    return await ensure_remedial_quiz_set(db, course_id=course_id, creator_id=faculty_id)
+
+
+@router.get("/assigned-remedial")
+async def get_assigned_remedial_quiz(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve targeted remedial quiz and diagnostic record for the student."""
+    from app.models.assessment import StudentDiagnosticRecord
+    from app.services.diagnostic_service import ensure_remedial_quiz_set, seed_demo_cohort_if_empty
+    import json
+
+    # Ensure demo cohort is seeded if student is enrolled in a course
+    enr_res = await db.execute(select(Enrollment.course_id).where(Enrollment.student_id == current_user.id).limit(1))
+    student_course_id = enr_res.scalar_one_or_none()
+    if not student_course_id:
+        c_res = await db.execute(select(Course.id).where(Course.is_active == True).limit(1))
+        student_course_id = c_res.scalar_one_or_none()
+    if student_course_id:
+        cf_res = await db.execute(select(CourseFaculty.faculty_id).where(CourseFaculty.course_id == student_course_id).limit(1))
+        fac_id = cf_res.scalar_one_or_none() or current_user.id
+        await seed_demo_cohort_if_empty(db, course_id=student_course_id, faculty_id=fac_id)
+
+    stmt = (
+        select(StudentDiagnosticRecord)
+        .where(StudentDiagnosticRecord.student_id == current_user.id)
+        .order_by(StudentDiagnosticRecord.created_at.desc())
+        .limit(1)
     )
-    db.add(qs)
-    await db.flush()
+    res = await db.execute(stmt)
+    rec = res.scalar_one_or_none()
+    if not rec:
+        return {"has_remedial": False, "quiz": None, "diagnostic": None}
 
-    sample_questions = [
-        (
-            "What is the worst-case time complexity of searching for an element in a balanced Binary Search Tree (AVL Tree) with n nodes?",
-            "O(1)",
-            "O(log n)",
-            "O(n)",
-            "O(n log n)",
-            "B",
-            "easy",
-            "An AVL tree maintains height balance O(log n), so lookup traverses at most O(log n) levels.",
-        ),
-        (
-            "Which data structure uses the Last-In, First-Out (LIFO) ordering principle and is foundational to function call frames and recursion?",
-            "Queue",
-            "Min-Heap",
-            "Stack",
-            "Hash Table",
-            "C",
-            "easy",
-            "Call stacks push activation records on invocation and pop them on return (LIFO).",
-        ),
-        (
-            "In dynamic programming, what two key properties must a problem exhibit for DP to be effective?",
-            "Greedy choice property and bipartite graph structure",
-            "Optimal substructure and overlapping subproblems",
-            "Constant branching factor and tail recursion",
-            "Monotonicity and uniform edge weights",
-            "B",
-            "medium",
-            "Dynamic programming caches solutions to overlapping subproblems that combine via optimal substructure.",
-        ),
-        (
-            "When resolving hash collisions via open addressing with linear probing, what phenomenon degrades average lookup performance as load factor α approaches 1?",
-            "Primary clustering",
-            "Stack overflow",
-            "Tree rotation imbalance",
-            "Priority inversion",
-            "A",
-            "medium",
-            "Consecutive occupied slots coalesce into long runs (primary clustering), increasing probe sequence lengths.",
-        ),
-        (
-            "Which shortest-path algorithm correctly handles graphs containing negative edge weights (assuming no negative-weight cycles)?",
-            "Dijkstra's Algorithm",
-            "Prim's Algorithm",
-            "Bellman-Ford Algorithm",
-            "Kruskal's Algorithm",
-            "C",
-            "hard",
-            "Bellman-Ford relaxes all edges V-1 times and accurately handles negative edge weights.",
-        ),
-    ]
+    diag_payload = {
+        "tier": rec.tier,
+        "learner_score": rec.learner_score,
+        "marks": rec.marks,
+        "cgpa": rec.cgpa,
+        "class_performance": rec.class_performance,
+        "analytical_thinking": rec.analytical_thinking,
+        "knowledge_level": rec.knowledge_level,
+        "problem_solving_skills": rec.problem_solving_skills,
+        "decision_making": rec.decision_making,
+        "errors": rec.errors,
+        "weak_dimensions": json.loads(rec.weak_dimensions) if rec.weak_dimensions else [],
+        "radar_data": json.loads(rec.radar_data) if rec.radar_data else {},
+        "model_votes": json.loads(rec.model_votes) if rec.model_votes else {},
+    }
 
-    for idx, (stem, a, b, c, d, corr, diff, expl) in enumerate(sample_questions, start=1):
-        db.add(
-            QuizQuestion(
-                quiz_set_id=qs.id,
-                question_type="mcq",
-                stem=stem,
-                option_a=a,
-                option_b=b,
-                option_c=c,
-                option_d=d,
-                correct_option=corr,
-                difficulty=diff,
-                explanation=expl,
-                is_approved=True,
-                sort_order=idx,
-            )
-        )
-    await db.flush()
-    return qs
+    if rec.tier != "Developing" or not rec.remedial_assigned:
+        return {"has_remedial": False, "quiz": None, "diagnostic": diag_payload}
+
+    # Ensure the remedial quiz has all 20 questions
+    qs = await ensure_remedial_quiz_set(db, course_id=rec.course_id, creator_id=rec.evaluated_by or current_user.id)
+    rec.remedial_quiz_id = qs.id
+    await db.commit()
+
+    q_res = await db.execute(
+        select(QuizQuestion).where(QuizQuestion.quiz_set_id == qs.id).order_by(QuizQuestion.sort_order)
+    )
+    questions = q_res.scalars().all()
+
+    att_res = await db.execute(
+        select(QuizAttempt).where(
+            QuizAttempt.student_id == current_user.id,
+            QuizAttempt.quiz_set_id == qs.id,
+        ).limit(1)
+    )
+    attempt = att_res.scalar_one_or_none()
+
+    return {
+        "has_remedial": True,
+        "is_completed": bool(attempt and attempt.completed_at),
+        "score_pct": attempt.score_pct if attempt else None,
+        "quiz": {
+            "id": str(qs.id),
+            "course_id": str(qs.course_id),
+            "title": "Targeted Remedial Quiz: Logic, Fundamentals & Error Debugging",
+            "date": str(qs.scheduled_date),
+            "scheduled_date": str(qs.scheduled_date),
+            "status": qs.status,
+            "questions": [_format_question(q) for q in questions],
+        },
+        "diagnostic": diag_payload,
+    }
 
 
 @router.get("/today")
@@ -156,15 +161,8 @@ async def get_today_quiz_default(
     if not target_course_id:
         raise HTTPException(404, "No course found for daily quiz.")
 
-    result = await db.execute(
-        select(QuizSet)
-        .where(QuizSet.course_id == target_course_id, QuizSet.status == "live")
-        .order_by(QuizSet.scheduled_date.desc())
-        .limit(1)
-    )
-    qs = result.scalar_one_or_none()
-    if not qs:
-        qs = await _ensure_demo_live_quiz(db, target_course_id, today, current_user.id)
+    qs = await _ensure_demo_live_quiz(db, target_course_id, today, current_user.id)
+    await db.commit()
 
     q_res = await db.execute(
         select(QuizQuestion).where(QuizQuestion.quiz_set_id == qs.id).order_by(QuizQuestion.sort_order)

@@ -12,8 +12,9 @@ export default function LoginPage() {
   const { login, user, loading } = useAuth();
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'student' | 'faculty' | 'admin'>('faculty');
+  const [email, setEmail] = useState('prof.sharma@edcap.demo');
+  const [password, setPassword] = useState('Faculty@123456789');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,12 +28,32 @@ export default function LoginPage() {
     return null;
   }
 
+  const switchRoleTab = (role: 'student' | 'faculty' | 'admin') => {
+    setSelectedRole(role);
+    setError('');
+    const creds = {
+      admin:   { email: 'admin@edcap.demo',       password: 'Admin@123456789' },
+      faculty: { email: 'prof.sharma@edcap.demo', password: 'Faculty@123456789' },
+      student: { email: 'arjun.mehta@edcap.demo', password: 'Student@123456789' },
+    };
+    setEmail(creds[role].email);
+    setPassword(creds[role].password);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid institutional email address.');
+      return;
+    }
+    if (!password || password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       router.replace('/dashboard');
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
@@ -42,15 +63,26 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemo = (role: 'admin' | 'faculty' | 'student') => {
+  const fillDemo = async (role: 'admin' | 'faculty' | 'student') => {
     const creds = {
       admin:   { email: 'admin@edcap.demo',       password: 'Admin@123456789' },
       faculty: { email: 'prof.sharma@edcap.demo', password: 'Faculty@123456789' },
       student: { email: 'arjun.mehta@edcap.demo', password: 'Student@123456789' },
     };
+    setSelectedRole(role);
     setEmail(creds[role].email);
     setPassword(creds[role].password);
     setError('');
+    setSubmitting(true);
+    try {
+      await login(creds[role].email, creds[role].password);
+      router.replace('/dashboard');
+    } catch (err: unknown) {
+      const apiErr = err as { message?: string };
+      setError(apiErr?.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -128,14 +160,14 @@ export default function LoginPage() {
         </div>
 
         <div style={{ position: 'relative', zIndex: 1, fontSize: 12, color: 'var(--text-muted)' }}>
-          SIH1432 Smart Education · WCAG 2.2 AA Compliant · Argon2id + CSRF Hardened
+          Enterprise Role-Based Access Control · WCAG 2.2 AA Compliant · Argon2id + JWT Hardened
         </div>
       </aside>
 
       {/* Right Authentication Form */}
       <section className="auth-main" aria-label="Sign in form">
         <div className="auth-card">
-          <div className="auth-logo" style={{ marginBottom: 24 }}>
+          <div className="auth-logo" style={{ marginBottom: 20 }}>
             <div className="auth-logo-icon">
               <Icon name="logo" size={19} strokeWidth={2} />
             </div>
@@ -143,7 +175,47 @@ export default function LoginPage() {
           </div>
 
           <h1 className="auth-heading">Sign in to your account</h1>
-          <p className="auth-subheading">Enter your institutional credentials or choose a demo role below</p>
+          <p className="auth-subheading">Select your portal role or enter your institutional credentials</p>
+
+          {/* Role Switcher Tabs */}
+          <div
+            role="tablist"
+            aria-label="Select portal role"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 6,
+              padding: 4,
+              borderRadius: 10,
+              background: 'var(--bg-elevated, rgba(255,255,255,0.04))',
+              border: '1px solid var(--border)',
+              marginBottom: 18,
+            }}
+          >
+            {(
+              [
+                { role: 'faculty', label: 'Faculty Login', icon: 'users' as const },
+                { role: 'student', label: 'Student Login', icon: 'courses' as const },
+                { role: 'admin',   label: 'Admin Login',   icon: 'shield' as const },
+              ] as const
+            ).map(tab => {
+              const active = selectedRole === tab.role;
+              return (
+                <button
+                  key={tab.role}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => switchRoleTab(tab.role)}
+                  className={`btn btn-sm ${active ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ justifyContent: 'center', fontSize: 12, padding: '7px 8px' }}
+                >
+                  <Icon name={tab.icon} size={13} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
           <form
             onSubmit={handleSubmit}
